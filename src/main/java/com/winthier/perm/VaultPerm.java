@@ -8,9 +8,6 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.permissions.PermissionAttachment;
-import org.bukkit.permissions.PermissionAttachmentInfo;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.ServicePriority;
 
 public final class VaultPerm extends Permission {
@@ -377,7 +374,7 @@ public final class VaultPerm extends Permission {
 
     /**
      * Remove transient permission from a player.
-     * This implementation can be used by any subclass which implements a "pure" superperms plugin, i.e. 
+     * This implementation can be used by any subclass which implements a "pure" superperms plugin, i.e.
      * one that only needs the built-in Bukkit API to remove transient permissions from a player.  Any subclass
      * implementing a plugin which provides its own API for this needs to override this method.
      *

@@ -151,7 +151,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage(playerName + " is in groups: " + findPlayerGroups(playerUuid));
             } else if ("set".equals(subcmd) && (args.length == 4 || args.length == 5)) {
                 String perm = args[3];
-                boolean value = args.length >= 5 ? value = Boolean.parseBoolean(args[4]) : true;
+                boolean value = args.length >= 5 ? Boolean.parseBoolean(args[4]) : true;
                 setPlayerPerm(playerUuid, perm, value);
                 sender.sendMessage(perm + " set to " + value + " for " + playerName);
             } else if ("unset".equals(subcmd) && args.length == 4) {
@@ -238,7 +238,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("Total " + count);
             } else if ("set".equals(subcmd) && (args.length == 4 || args.length == 5)) {
                 String perm = args[3];
-                boolean value = args.length >= 5 ? value = Boolean.parseBoolean(args[4]) : true;
+                boolean value = args.length >= 5 ? Boolean.parseBoolean(args[4]) : true;
                 setGroupPerm(groupName, perm, value);
                 sender.sendMessage(perm + " set to " + value + " for group " + groupName);
             } else if ("unset".equals(subcmd) && args.length == 4) {
