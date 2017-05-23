@@ -1,0 +1,18 @@
+name: Perm
+description: Permission plugin
+author: StarTux
+version: 0.1
+main: com.winthier.perm.PermPlugin
+depend: [ SQL, PlayerCache ]
+loadbefore: [ Vault ]
+commands:
+  perm:
+    description: Admin command
+    usage: |-
+      /perm player <name> ... - Player settings
+      /perm group <group> ... - Group settings
+      /perm list <what> ... - List things
+permissions:
+  perm.perm:
+    description: Use /perm
+    default: op
