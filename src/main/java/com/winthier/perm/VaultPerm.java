@@ -20,6 +20,7 @@ public final class VaultPerm extends Permission {
 
     void register() {
         permPlugin.getServer().getServicesManager().register(Permission.class, this, permPlugin, ServicePriority.Highest);
+        plugin.getLogger().info("Vault permissions provider registered");
     }
 
     /**

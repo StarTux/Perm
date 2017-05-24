@@ -50,6 +50,14 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     @Override
+    public void onLoad() {
+        if (vaultPerm == null && getServer().getPluginManager().getPlugin("Vault") != null) {
+            vaultPerm = new VaultPerm(this);
+            vaultPerm.register();
+        }
+    }
+
+    @Override
     public void onEnable() {
         readConfiguration();
         db = new SQLDatabase(this);
@@ -70,6 +78,10 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 }
             };
         updateTask.runTaskTimer(this, 0, refreshInterval * 20);
+        if (vaultPerm == null && getServer().getPluginManager().getPlugin("Vault") != null) {
+                vaultPerm = new VaultPerm(this);
+                vaultPerm.register();
+        }
     }
 
     @Override
@@ -77,6 +89,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         for (Player player: getServer().getOnlinePlayers()) {
             resetPlayerPerms(player);
         }
+        vaultPerm = null;
     }
 
     void readConfiguration() {
@@ -525,6 +538,8 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPluginEnable(PluginEnableEvent event) {
+        if (vaultPerm != null) return;
+        if (!event.getPlugin().getName().equals("Vault")) return;
         vaultPerm = new VaultPerm(this);
         vaultPerm.register();
     }
