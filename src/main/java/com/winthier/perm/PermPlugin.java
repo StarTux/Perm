@@ -434,12 +434,15 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     Map<String, Boolean> findPlayerPerms(UUID uuid) {
         getCache();
+        final Map<String, Boolean> perms = new HashMap<>();
         Map<String, Integer> groups = new HashMap<>();
         for (SQLMember mem: cache.members) {
             if (uuid.equals(mem.getMember())) {
                 String groupName = mem.getGroup();
+                perms.put("rank." + groupName, true);
                 SQLGroup group = cache.findGroup(groupName);
                 while (group != null && !groups.containsKey(group.getKey())) {
+                    perms.put("group." + group.getKey(), true);
                     groups.put(group.getKey(), group.getPriority());
                     if (group.getParent() == null) {
                         group = null;
@@ -454,7 +457,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             if (group != null) groups.put(group.getKey(), group.getPriority());
         }
         final String uuidString = uuid.toString();
-        final Map<String, Boolean> perms = new HashMap<>();
         final Map<String, Integer> prios = new HashMap<>();
         for (SQLPermission perm: cache.permissions) {
             if (perm.getIsGroup()) {
