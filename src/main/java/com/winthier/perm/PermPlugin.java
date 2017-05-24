@@ -4,6 +4,7 @@ import com.winthier.playercache.PlayerCache;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,22 +22,24 @@ import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
 
 @Getter
 public final class PermPlugin extends JavaPlugin implements Listener {
     private SQLDatabase db;
     private Cache cache;
     private String defaultGroup = "Guest";
-    private long refreshInterval = 60;
+    private int refreshInterval = 10;
     private boolean migrationEnabled = false;
     private boolean refreshScheduled = false;
     private VaultPerm vaultPerm;
+    private BukkitRunnable updateTask;
 
     static final class Cache {
         private List<SQLGroup> groups;
         private List<SQLMember> members;
         private List<SQLPermission> permissions;
-        private long created = System.currentTimeMillis();
+        private SQLVersion version;
         SQLGroup findGroup(String name) {
             name = name.toLowerCase();
             for (SQLGroup group: groups) {
@@ -52,10 +55,21 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         db = new SQLDatabase(this);
         db.registerTables(SQLGroup.class,
                           SQLMember.class,
-                          SQLPermission.class);
+                          SQLPermission.class,
+                          SQLVersion.class);
         db.createAllTables();
         getServer().getPluginManager().registerEvents(this, this);
         refreshPermissions();
+        if (updateTask != null) {
+            updateTask.cancel();
+            updateTask = null;
+        }
+        updateTask = new BukkitRunnable() {
+                @Override public void run() {
+                    testVersion();
+                }
+            };
+        updateTask.runTaskTimer(this, 0, refreshInterval * 20);
     }
 
     @Override
@@ -68,12 +82,30 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     void readConfiguration() {
         reloadConfig();
         defaultGroup = getConfig().getString("DefaultGroup");
-        refreshInterval = getConfig().getLong("RefreshInterval");
+        refreshInterval = getConfig().getInt("RefreshInterval");
         migrationEnabled = getConfig().getBoolean("MigrationEnabled");
     }
 
+    void updateVersion() {
+        SQLVersion version;
+        if (cache == null) {
+            version = cache.version;
+        } else {
+            version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
+            if (version == null) version = new SQLVersion("Perm");
+        }
+        version.setVersion(new Date());
+        db.save(version);
+    }
+
     void refreshPermissions() {
-        this.cache = loadCache();
+        Cache newCache = new Cache();
+        newCache.groups = db.find(SQLGroup.class).findList();
+        newCache.members = db.find(SQLMember.class).findList();
+        newCache.permissions = db.find(SQLPermission.class).findList();
+        newCache.version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
+        if (newCache.version == null) newCache.version = new SQLVersion("Perm");
+        this.cache = newCache;
         for (Player player: getServer().getOnlinePlayers()) {
             resetPlayerPerms(player);
             setupPlayerPerms(player);
@@ -310,6 +342,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 group.setPriority(prio);
                 db.save(group);
                 sender.sendMessage("Set priority of group " + groupName + " to " + prio);
+                updateVersion();
                 refreshPermissions();
             } else if ("setparent".equals(subcmd) && args.length == 4) {
                 String parentName = args[3];
@@ -322,6 +355,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 group.setParent(parentName);
                 db.save(group);
                 sender.sendMessage("Set parent of group " + groupName + " to " + parentName);
+                updateVersion();
                 refreshPermissions();
             } else {
                 sender.sendMessage("Usage");
@@ -378,17 +412,11 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         return null;
     }
 
-    Cache loadCache() {
-        Cache newCache = new Cache();
-        newCache.groups = db.find(SQLGroup.class).findList();
-        newCache.members = db.find(SQLMember.class).findList();
-        newCache.permissions = db.find(SQLPermission.class).findList();
-        return newCache;
-    }
-
-    Cache getCache() {
-        if (cache == null || (cache.created + refreshInterval * 1000L) < System.currentTimeMillis()) cache = loadCache();
-        return cache;
+    void testVersion() {
+        SQLVersion version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
+        if (version != null && !version.getVersion().equals(cache.version.getVersion())) {
+            refreshPermissions();
+        }
     }
 
     Map<String, Boolean> findPlayerPerms(UUID uuid) {
@@ -574,6 +602,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             row.setValue(value);
             db.save(row);
         }
+        updateVersion();
         refreshPermissions();
         return true;
     }
@@ -594,6 +623,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             row.setValue(value);
             db.save(row);
         }
+        updateVersion();
         refreshPermissions();
         return true;
     }
@@ -611,6 +641,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         } else {
             db.delete(row);
         }
+        updateVersion();
         refreshPermissions();
         return true;
     }
