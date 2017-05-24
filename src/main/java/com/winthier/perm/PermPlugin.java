@@ -389,16 +389,15 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     void resetPlayerPerms(Player player) {
-        List<PermissionAttachment> list = new ArrayList<>();
+        PermissionAttachment attachment = null;
         for (PermissionAttachmentInfo info: player.getEffectivePermissions()) {
             PermissionAttachment attach = info.getAttachment();
             if (attach != null && attach.getPlugin().equals(this)) {
-                list.add(info.getAttachment());
+                attachment = info.getAttachment();
+                break;
             }
         }
-        for (PermissionAttachment attach: list) {
-            player.removeAttachment(attach);
-        }
+        if (attachment != null) player.removeAttachment(attachment);
     }
 
     void setupPlayerPerms(Player player) {
@@ -421,6 +420,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     public boolean playerHasPerm(UUID uuid, String perm) {
+        perm = perm.toLowerCase();
         Map<String, Boolean> perms = findPlayerPerms(uuid);
         Boolean result = perms.get(perm);
         if (result != null) return result;
@@ -428,6 +428,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     public boolean groupHasPerm(String name, String perm) {
+        perm = perm.toLowerCase();
         Map<String, Boolean> perms = findGroupPerms(name);
         Boolean result = perms.get(perm);
         if (result != null) return result;

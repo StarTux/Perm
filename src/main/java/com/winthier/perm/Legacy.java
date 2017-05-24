@@ -104,7 +104,7 @@ final class Legacy {
             } else {
                 permission = new SQLPermission(zentity.getUuid().toString(),
                                                false,
-                                               zentry.permission,
+                                               zentry.permission.toLowerCase(),
                                                zentry.value);
             }
             permissions.add(permission);
