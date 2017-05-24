@@ -25,6 +25,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     private SQLDatabase db;
     private Cache cache;
     private String defaultGroup = "Guest";
+    private long refreshInterval = 60;
     private VaultPerm vaultPerm;
 
     static final class Cache {
@@ -32,6 +33,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         private List<SQLMember> members;
         private List<SQLPermission> permissions;
         private SQLVersion version;
+        private long created = System.currentTimeMillis();
         SQLGroup findGroup(String name) {
             name = name.toLowerCase();
             for (SQLGroup group: groups) {
@@ -64,6 +66,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     void readConfiguration() {
         reloadConfig();
         defaultGroup = getConfig().getString("DefaultGroup");
+        refreshInterval = getConfig().getLong("RefreshInterval");
     }
 
     void refreshPermissions() {
@@ -300,7 +303,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     Cache getCache() {
-        if (cache == null) cache = loadCache();
+        if (cache == null || (cache.created + refreshInterval * 1000L) < System.currentTimeMillis()) cache = loadCache();
         return cache;
     }
 
