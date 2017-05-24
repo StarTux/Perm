@@ -692,7 +692,16 @@ public final class VaultPerm extends Permission {
         if (uuid == null) return permPlugin.getDefaultGroup();
         List<String> groups = permPlugin.findPlayerGroups(uuid);
         if (groups.isEmpty()) return permPlugin.getDefaultGroup();
-        return groups.get(0);
+        String result = groups.get(0);
+        int prio = 0;
+        for (String name: groups) {
+            SQLGroup group = permPlugin.getCache().findGroup(name);
+            if (group != null && group.getPriority() > prio) {
+                result = group.getDisplayName();
+                prio = group.getPriority();
+            }
+        }
+        return result;
     }
 
     /**

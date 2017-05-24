@@ -3,10 +3,12 @@ package com.winthier.perm;
 import com.winthier.playercache.PlayerCache;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.Getter;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -26,13 +28,14 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     private Cache cache;
     private String defaultGroup = "Guest";
     private long refreshInterval = 60;
+    private boolean migrationEnabled = false;
+    private boolean refreshScheduled = false;
     private VaultPerm vaultPerm;
 
     static final class Cache {
         private List<SQLGroup> groups;
         private List<SQLMember> members;
         private List<SQLPermission> permissions;
-        private SQLVersion version;
         private long created = System.currentTimeMillis();
         SQLGroup findGroup(String name) {
             name = name.toLowerCase();
@@ -49,8 +52,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         db = new SQLDatabase(this);
         db.registerTables(SQLGroup.class,
                           SQLMember.class,
-                          SQLPermission.class,
-                          SQLVersion.class);
+                          SQLPermission.class);
         db.createAllTables();
         getServer().getPluginManager().registerEvents(this, this);
         refreshPermissions();
@@ -67,6 +69,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         reloadConfig();
         defaultGroup = getConfig().getString("DefaultGroup");
         refreshInterval = getConfig().getLong("RefreshInterval");
+        migrationEnabled = getConfig().getBoolean("MigrationEnabled");
     }
 
     void refreshPermissions() {
@@ -89,6 +92,10 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             refreshPermissions();
             sender.sendMessage("Permissions refreshed.");
         } else if ("migrate".equals(cmd)) {
+            if (!migrationEnabled) {
+                sender.sendMessage("Migration is disabled in the config.");
+                return true;
+            }
             try {
                 Legacy.migrate(this);
             } catch (Exception e) {
@@ -183,13 +190,28 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                     sender.sendMessage(playerName + " is not in group " + groupName);
                 }
             } else {
-                return false; // TODO usage
+                sender.sendMessage("Usage");
+                sender.sendMessage("/perm player <name> get <perm> - Get stored permission value");
+                sender.sendMessage("/perm player <name> show [pattern] - List assigned permissions");
+                sender.sendMessage("/perm player <name> dump [pattern] - List all permissions");
+                sender.sendMessage("/perm player <name> has <perm> - Bukkit hasPermission check");
+                sender.sendMessage("/perm player <name> set <perm> [value] - Assign permission");
+                sender.sendMessage("/perm player <name> unset <perm> - Unassign permission");
+                sender.sendMessage("/perm player <name> addgroup <group> - Add player to group");
+                sender.sendMessage("/perm player <name> removegroup <group> - Remove player from group");
             }
         } else if ("group".equals(cmd) && args.length >= 2) {
             String groupName = args[1];
             SQLGroup group = getCache().findGroup(groupName);
             if (group == null) {
-                sender.sendMessage("Group not found: " + groupName);
+                if (args.length == 3 && args[2].equalsIgnoreCase("create")) {
+                    group = new SQLGroup(groupName.toLowerCase(), 0, groupName, null);
+                    db.save(group);
+                    cache.groups.add(group);
+                    sender.sendMessage("Group created: " + groupName);
+                } else {
+                    sender.sendMessage("Group not found: " + groupName);
+                }
                 return true;
             }
             groupName = group.getKey();
@@ -277,15 +299,60 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 } else {
                     sender.sendMessage(playerName + " is not in group " + groupName);
                 }
+            } else if ("setpriority".equals(subcmd) && args.length == 4) {
+                int prio;
+                try {
+                    prio = Integer.parseInt(args[3]);
+                } catch (NumberFormatException nfe) {
+                    sender.sendMessage("Not a number: " + args[3]);
+                    return true;
+                }
+                group.setPriority(prio);
+                db.save(group);
+                sender.sendMessage("Set priority of group " + groupName + " to " + prio);
+                refreshPermissions();
+            } else if ("setparent".equals(subcmd) && args.length == 4) {
+                String parentName = args[3];
+                SQLGroup parentGroup = cache.findGroup(parentName);
+                if (parentGroup == null) {
+                    sender.sendMessage("Group not found: " + parentName);
+                    return true;
+                }
+                parentName = parentGroup.getKey();
+                group.setParent(parentName);
+                db.save(group);
+                sender.sendMessage("Set parent of group " + groupName + " to " + parentName);
+                refreshPermissions();
             } else {
-                return false; // TODO usage
+                sender.sendMessage("Usage");
+                sender.sendMessage("/perm group <name> get <perm> - Get stored permission value");
+                sender.sendMessage("/perm group <name> show [pattern] - List assigned permissions");
+                sender.sendMessage("/perm group <name> dump [pattern] - List all permissions");
+                sender.sendMessage("/perm group <name> set <perm> [value] - Assign permission");
+                sender.sendMessage("/perm group <name> unset <perm> - Unassign permission");
+                sender.sendMessage("/perm group <name> add <player> - Add player to group");
+                sender.sendMessage("/perm group <name> remove <player> - Remove player from group");
+                sender.sendMessage("/perm group <name> setpriority <prio> - Set group priority");
+                sender.sendMessage("/perm group <name> setparent <group> - Set parent group");
             }
         } else if ("list".equals(cmd)) {
             String subcmd = args.length >= 2 ? args[1].toLowerCase() : null;
             if ("groups".equals(subcmd)) {
                 sender.sendMessage("Groups: " + getGroups());
+            } else if ("playerperms".equals(subcmd)) {
+                sender.sendMessage("Assigned player permissions:");
+                int count = 0;
+                for (SQLPermission permission: getCache().permissions) {
+                    if (permission.getIsGroup()) continue;
+                    String playerName = PlayerCache.nameForUuid(UUID.fromString(permission.getEntity()));
+                    sender.sendMessage(playerName + ": " + permission.getPermission() + ": " + permission.getValue());
+                    count += 1;
+                }
+                sender.sendMessage("Total " + count);
             } else {
-                return false; // TODO usage
+                sender.sendMessage("Usage");
+                sender.sendMessage("/perm list groups - List groups");
+                sender.sendMessage("/perm list playerperms - List assigned player permissions");
             }
         } else {
             return false;
@@ -293,12 +360,29 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         return true;
     }
 
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 0) return null;
+        String pat = args[args.length - 1];
+        if (args.length == 1) {
+            return Arrays.asList("player", "group", "list", "reload", "refresh").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("list")) {
+            return Arrays.asList("groups", "playerperms").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("group")) {
+            return getGroups().stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("player")) {
+            return Arrays.asList("get", "show", "dump", "has", "set", "unset", "addgroup", "removegroup").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
+        } else if (args.length == 3 && args[0].equalsIgnoreCase("group")) {
+            return Arrays.asList("get", "show", "dump", "set", "unset", "add", "remove", "create", "setpriority", "setparent").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
+        }
+        return null;
+    }
+
     Cache loadCache() {
         Cache newCache = new Cache();
         newCache.groups = db.find(SQLGroup.class).findList();
         newCache.members = db.find(SQLMember.class).findList();
         newCache.permissions = db.find(SQLPermission.class).findList();
-        newCache.version = db.find(SQLVersion.class).findUnique();
         return newCache;
     }
 
@@ -474,6 +558,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         }
         return result;
     }
+
     public boolean setPlayerPerm(UUID uuid, String perm, Boolean value) {
         perm = perm.toLowerCase();
         SQLPermission row = db.find(SQLPermission.class).eq("entity", uuid.toString()).eq("isGroup", false).eq("permission", perm).findUnique();
