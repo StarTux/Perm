@@ -68,16 +68,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         db.createAllTables();
         getServer().getPluginManager().registerEvents(this, this);
         refreshPermissions();
-        if (updateTask != null) {
-            updateTask.cancel();
-            updateTask = null;
-        }
-        updateTask = new BukkitRunnable() {
-                @Override public void run() {
-                    testVersion();
-                }
-            };
-        updateTask.runTaskTimer(this, 0, refreshInterval * 20);
         if (vaultPerm == null && getServer().getPluginManager().getPlugin("Vault") != null) {
                 vaultPerm = new VaultPerm(this);
                 vaultPerm.register();
@@ -97,6 +87,18 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         defaultGroup = getConfig().getString("DefaultGroup");
         refreshInterval = getConfig().getInt("RefreshInterval");
         migrationEnabled = getConfig().getBoolean("MigrationEnabled");
+        if (updateTask != null) {
+            updateTask.cancel();
+            updateTask = null;
+        }
+        if (refreshInterval > 0) {
+            updateTask = new BukkitRunnable() {
+                    @Override public void run() {
+                        testVersion();
+                    }
+                };
+            updateTask.runTaskTimer(this, 0, refreshInterval * 20);
+        }
     }
 
     void updateVersion() {
