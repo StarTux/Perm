@@ -1,5 +1,6 @@
 package com.winthier.perm;
 
+import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -23,5 +24,9 @@ public final class SQLPermission {
         this.isGroup = isGroup;
         this.permission = permission;
         this.value = value;
+    }
+
+    UUID getUuid() {
+        return UUID.fromString(entity);
     }
 }

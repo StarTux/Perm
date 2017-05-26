@@ -4,10 +4,13 @@ import com.winthier.playercache.PlayerCache;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
@@ -29,7 +32,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     private SQLDatabase db;
     private Cache cache;
     private String defaultGroup = "Guest";
-    private int refreshInterval = 10;
+    private int refreshInterval = 30;
     private boolean migrationEnabled = false;
     private boolean refreshScheduled = false;
     private VaultPerm vaultPerm;
@@ -47,6 +50,13 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             }
             return null;
         }
+        private final HashMap<String, List<String>> deepGroupParents = new HashMap<>();
+        private final HashMap<UUID, HashMap<String, Boolean>> flatPlayerPerms = new HashMap<>();
+        private final HashMap<String, HashMap<String, Boolean>> flatGroupPerms = new HashMap<>();
+        private final HashMap<String, List<UUID>> groupMembers = new HashMap<>();
+        private final HashMap<Set<String>, HashMap<String, Boolean>> deepGroupPerms = new HashMap<>();
+        private final HashMap<String, Integer> groupPrios = new HashMap<>();
+        private final HashMap<UUID, Map<String, Boolean>> deepPlayerPerms = new HashMap<>();
     }
 
     @Override
@@ -120,6 +130,42 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         newCache.permissions = db.find(SQLPermission.class).findList();
         newCache.version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
         if (newCache.version == null) newCache.version = new SQLVersion("Perm");
+        for (SQLGroup row: newCache.groups) {
+            List<String> deepGroupParents = new ArrayList<>();
+            newCache.deepGroupParents.put(row.getKey(), deepGroupParents);
+            SQLGroup currentRow = row;
+            do {
+                deepGroupParents.add(currentRow.getKey());
+                if (currentRow.getParent() == null) {
+                    currentRow = null;
+                } else {
+                    currentRow = newCache.findGroup(currentRow.getParent());
+                }
+            } while (currentRow != null);
+            newCache.groupMembers.put(row.getKey(), new ArrayList<>());
+            newCache.groupPrios.put(row.getKey(), row.getPriority());
+            newCache.flatGroupPerms.put(row.getKey(), new HashMap<>());
+        }
+        for (SQLMember row: newCache.members) {
+            List<UUID> list = newCache.groupMembers.get(row.getGroup());
+            if (list == null) continue;
+            list.add(row.getMember());
+        }
+        for (SQLPermission row: newCache.permissions) {
+            if (row.getIsGroup()) {
+                SQLGroup group = newCache.findGroup(row.getEntity());
+                if (group == null) continue;
+                newCache.flatGroupPerms.get(group.getKey()).put(row.getPermission(), row.getValue());
+            } else {
+                UUID uuid = row.getUuid();
+                HashMap<String, Boolean> perms = newCache.flatPlayerPerms.get(uuid);
+                if (perms == null) {
+                    perms = new HashMap<>();
+                    newCache.flatPlayerPerms.put(uuid, perms);
+                }
+                perms.put(row.getPermission(), row.getValue());
+            }
+        }
         this.cache = newCache;
         for (Player player: getServer().getOnlinePlayers()) {
             resetPlayerPerms(player);
@@ -171,7 +217,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 }
                 String entityName = playerUuid.toString();
                 int count = 0;
-                for (SQLPermission permission: getCache().permissions) {
+                for (SQLPermission permission: cache.permissions) {
                     if (permission.getIsGroup()) continue;
                     if (!entityName.equals(permission.getEntity())) continue;
                     if (pattern == null || permission.getPermission().contains(pattern)) {
@@ -220,7 +266,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 }
             } else if ("addgroup".equals(subcmd) && args.length == 4) {
                 String groupName = args[3];
-                if (getCache().findGroup(groupName) == null) {
+                if (cache.findGroup(groupName) == null) {
                     sender.sendMessage("Group not found: " + groupName);
                     return true;
                 }
@@ -249,7 +295,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             }
         } else if ("group".equals(cmd) && args.length >= 2) {
             String groupName = args[1];
-            SQLGroup group = getCache().findGroup(groupName);
+            SQLGroup group = cache.findGroup(groupName);
             if (group == null) {
                 if (args.length == 3 && args[2].equalsIgnoreCase("create")) {
                     group = new SQLGroup(groupName.toLowerCase(), 0, groupName, null);
@@ -275,7 +321,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                     sender.sendMessage("Declared permissions of group " + groupName + " matching " + pattern + ":");
                 }
                 int count = 0;
-                for (SQLPermission permission: getCache().permissions) {
+                for (SQLPermission permission: cache.permissions) {
                     if (!permission.getIsGroup()) continue;
                     if (!groupName.equals(permission.getEntity())) continue;
                     if (pattern == null || permission.getPermission().contains(pattern)) {
@@ -391,7 +437,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             } else if ("playerperms".equals(subcmd)) {
                 sender.sendMessage("Assigned player permissions:");
                 int count = 0;
-                for (SQLPermission permission: getCache().permissions) {
+                for (SQLPermission permission: cache.permissions) {
                     if (permission.getIsGroup()) continue;
                     String playerName = PlayerCache.nameForUuid(UUID.fromString(permission.getEntity()));
                     sender.sendMessage(playerName + ": " + permission.getPermission() + ": " + permission.getValue());
@@ -430,63 +476,43 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     void testVersion() {
         SQLVersion version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
         if (version != null && !version.getVersion().equals(cache.version.getVersion())) {
+            getLogger().info("Refreshing permissions from database");
             refreshPermissions();
         }
     }
 
     Map<String, Boolean> findPlayerPerms(UUID uuid) {
-        getCache();
-        final Map<String, Boolean> perms = new HashMap<>();
-        Map<String, Integer> groups = new HashMap<>();
-        for (SQLMember mem: cache.members) {
-            if (uuid.equals(mem.getMember())) {
-                String groupName = mem.getGroup();
-                perms.put("rank." + groupName, true);
-                SQLGroup group = cache.findGroup(groupName);
-                while (group != null && !groups.containsKey(group.getKey())) {
-                    perms.put("group." + group.getKey(), true);
-                    groups.put(group.getKey(), group.getPriority());
-                    if (group.getParent() == null) {
-                        group = null;
-                    } else {
-                        group = cache.findGroup(group.getParent());
-                    }
-                }
+        Map<String, Boolean> perms = cache.deepPlayerPerms.get(uuid);
+        if (perms != null) return perms;
+        Set<String> assignedGroups = new HashSet<>();
+        for (SQLGroup group: cache.groups) {
+            if (cache.groupMembers.get(group.getKey()).contains(uuid)) {
+                assignedGroups.add(group.getKey());
             }
         }
-        if (groups.isEmpty()) {
-            SQLGroup group = cache.findGroup(defaultGroup);
-            if (group != null) groups.put(group.getKey(), group.getPriority());
-        }
-        final String uuidString = uuid.toString();
-        final Map<String, Integer> prios = new HashMap<>();
-        for (SQLPermission perm: cache.permissions) {
-            if (perm.getIsGroup()) {
-                if (groups.containsKey(perm.getEntity())) {
-                    Boolean oldPerm = perms.get(perm.getPermission());
-                    if (oldPerm == null) {
-                        perms.put(perm.getPermission(), perm.getValue());
-                        prios.put(perm.getPermission(), groups.get(perm.getEntity()));
-                    } else {
-                        Integer oldPrio = prios.get(perm.getPermission());
-                        if (oldPrio != null && oldPrio < groups.get(perm.getEntity())) {
-                            perms.put(perm.getPermission(), perm.getValue());
-                            prios.put(perm.getPermission(), groups.get(perm.getEntity()));
-                        }
-                    }
-                }
-            } else {
-                if (uuidString.equals(perm.getEntity())) {
-                    perms.put(perm.getPermission(), perm.getValue());
-                    prios.remove(perm.getPermission());
-                }
+        HashMap<String, Boolean> deepGroupPerms = cache.deepGroupPerms.get(assignedGroups);
+        if (deepGroupPerms == null) {
+            deepGroupPerms = new HashMap<>();
+            List<String> groupList = new ArrayList<>();
+            for (String key: assignedGroups) {
+                deepGroupPerms.put("rank." + key, true);
+                groupList.addAll(cache.deepGroupParents.get(key));
             }
+            for (String key: groupList) deepGroupPerms.put("group." + key, true);
+            Collections.sort(groupList, (a, b) -> Integer.compare(cache.groupPrios.get(a), cache.groupPrios.get(b)));
+            for (String key: groupList) {
+                deepGroupPerms.putAll(cache.flatGroupPerms.get(key));
+            }
+            cache.deepGroupPerms.put(assignedGroups, deepGroupPerms);
         }
+        perms = new HashMap<>(deepGroupPerms);
+        HashMap<String, Boolean> flatPlayerPerms = cache.flatPlayerPerms.get(uuid);
+        if (flatPlayerPerms != null) perms.putAll(flatPlayerPerms);
+        cache.deepPlayerPerms.put(uuid, perms);
         return perms;
     }
 
     Map<String, Boolean> findGroupPerms(String groupName) {
-        getCache();
         final Map<String, Boolean> perms = new HashMap<>();
         SQLGroup group = cache.findGroup(groupName.toLowerCase());
         if (group == null) return perms;
@@ -571,7 +597,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     public boolean playerInGroup(UUID uuid, String groupName) {
         groupName = groupName.toLowerCase();
-        getCache();
         for (SQLMember mem: cache.members) {
             if (!uuid.equals(mem.getMember())) continue;
             if (groupName.equals(mem.getGroup())) return true;
@@ -585,7 +610,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     public List<String> findPlayerGroups(UUID uuid) {
-        getCache();
         List<String> result = new ArrayList<>();
         for (SQLMember mem: cache.members) {
             if (!uuid.equals(mem.getMember())) continue;
@@ -596,7 +620,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     public List<UUID> findGroupMembers(String groupName) {
-        getCache();
         groupName = groupName.toLowerCase();
         List<UUID> result = new ArrayList<>();
         for (SQLMember mem: cache.members) {
@@ -667,7 +690,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     public List<String> getGroups() {
         List<String> result = new ArrayList<>();
-        for (SQLGroup group: getCache().groups) {
+        for (SQLGroup group: cache.groups) {
             result.add(group.getDisplayName());
         }
         return result;
