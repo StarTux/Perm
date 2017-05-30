@@ -547,15 +547,13 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     void resetPlayerPerms(Player player) {
-        PermissionAttachment attachment = null;
         for (PermissionAttachmentInfo info: player.getEffectivePermissions()) {
             PermissionAttachment attach = info.getAttachment();
             if (attach != null && attach.getPlugin().equals(this)) {
-                attachment = info.getAttachment();
-                break;
+                attach.remove();
+                return;
             }
         }
-        if (attachment != null) player.removeAttachment(attachment);
     }
 
     void setupPlayerPerms(Player player) {
