@@ -22,8 +22,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.server.PluginEnableEvent;
+import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.permissions.PermissionAttachmentInfo;
+import org.bukkit.permissions.PermissionDefault;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -168,7 +170,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         }
         this.cache = newCache;
         for (Player player: getServer().getOnlinePlayers()) {
-            resetPlayerPerms(player);
             setupPlayerPerms(player);
         }
     }
@@ -558,9 +559,21 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     void setupPlayerPerms(Player player) {
         Map<String, Boolean> perms = findPlayerPerms(player.getUniqueId());
-        PermissionAttachment attach = player.addAttachment(this);
-        for (Map.Entry<String, Boolean> entry: perms.entrySet()) {
-            attach.setPermission(entry.getKey(), entry.getValue());
+        // This is a little trick I learned from zPermissions.  Do not
+        // add an attachment as adding permissions to it is slow.
+        // Instead, create a parent permission for the player
+        // containing all their effective permissions as children.
+        String motherPerm = "Perm-" + player.getUniqueId();
+        Permission permission = getServer().getPluginManager().getPermission(motherPerm);
+        if (permission == null) {
+            permission = new Permission(motherPerm, PermissionDefault.FALSE, perms);
+            getServer().getPluginManager().addPermission(permission);
+        } else {
+            permission.getChildren().clear();
+            permission.getChildren().putAll(perms);
+        }
+        if (!player.isPermissionSet(motherPerm) || !player.hasPermission(motherPerm)) {
+            PermissionAttachment attach = player.addAttachment(this, motherPerm, true);
         }
     }
 
