@@ -574,6 +574,8 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         }
         if (!player.isPermissionSet(motherPerm) || !player.hasPermission(motherPerm)) {
             PermissionAttachment attach = player.addAttachment(this, motherPerm, true);
+        } else {
+            permission.recalculatePermissibles();
         }
     }
 
