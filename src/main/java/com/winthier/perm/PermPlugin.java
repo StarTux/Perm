@@ -113,7 +113,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     void updateVersion() {
         SQLVersion version;
-        if (cache == null) {
+        if (cache != null) {
             version = cache.version;
         } else {
             version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
