@@ -71,6 +71,8 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        reloadConfig();
+        saveDefaultConfig();
         readConfiguration();
         db = new SQLDatabase(this);
         db.registerTables(SQLGroup.class,
@@ -491,6 +493,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 assignedGroups.add(group.getKey());
             }
         }
+        if (assignedGroups.isEmpty()) assignedGroups.add(defaultGroup);
         HashMap<String, Boolean> deepGroupPerms = cache.deepGroupPerms.get(assignedGroups);
         if (deepGroupPerms == null) {
             deepGroupPerms = new HashMap<>();
