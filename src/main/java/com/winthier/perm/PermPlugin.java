@@ -134,6 +134,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         newCache.permissions = db.find(SQLPermission.class).findList();
         newCache.version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
         if (newCache.version == null) newCache.version = new SQLVersion("Perm");
+        newCache.deepGroupParents.put(defaultGroup.toLowerCase(), new ArrayList<>());
         for (SQLGroup row: newCache.groups) {
             List<String> deepGroupParents = new ArrayList<>();
             newCache.deepGroupParents.put(row.getKey(), deepGroupParents);
