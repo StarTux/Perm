@@ -10,7 +10,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.ServicePriority;
 
-public final class VaultPerm extends Permission {
+final class VaultPerm extends Permission {
     private final PermPlugin permPlugin;
 
     VaultPerm(PermPlugin plugin) {

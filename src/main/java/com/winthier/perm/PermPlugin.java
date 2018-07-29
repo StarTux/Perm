@@ -64,7 +64,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onLoad() {
-        if (vaultPerm == null && getServer().getPluginManager().getPlugin("Vault") != null) {
+        if (vaultPerm == null && getServer().getPluginManager().isPluginEnabled("Vault")) {
             vaultPerm = new VaultPerm(this);
             vaultPerm.register();
         }
@@ -83,9 +83,9 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         db.createAllTables();
         getServer().getPluginManager().registerEvents(this, this);
         refreshPermissions();
-        if (vaultPerm == null && getServer().getPluginManager().getPlugin("Vault") != null) {
-                vaultPerm = new VaultPerm(this);
-                vaultPerm.register();
+        if (vaultPerm == null && getServer().getPluginManager().isPluginEnabled("Vault")) {
+            vaultPerm = new VaultPerm(this);
+            vaultPerm.register();
         }
     }
 
