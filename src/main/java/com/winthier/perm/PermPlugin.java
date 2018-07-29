@@ -1,5 +1,6 @@
 package com.winthier.perm;
 
+import com.winthier.generic_events.PlayerHasPermissionEvent;
 import com.winthier.playercache.PlayerCache;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
@@ -594,6 +595,11 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerLogin(PlayerLoginEvent event) {
         setupPlayerPerms(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerHasPermission(PlayerHasPermissionEvent event) {
+        event.setPermitted(playerHasPerm(event.getPlayerId(), event.getPermission()));
     }
 
     public boolean playerHasPerm(UUID uuid, String perm) {
