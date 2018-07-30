@@ -38,7 +38,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     private int refreshInterval = 30;
     private boolean migrationEnabled = false;
     private boolean refreshScheduled = false;
-    private VaultPerm vaultPerm;
+    private boolean vaultEnabled = false;
     private BukkitRunnable updateTask;
 
     static final class Cache {
@@ -64,8 +64,8 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onLoad() {
-        if (vaultPerm == null && getServer().getPluginManager().isPluginEnabled("Vault")) {
-            vaultPerm = new VaultPerm(this);
+        if (!vaultEnabled && getServer().getPluginManager().isPluginEnabled("Vault")) {
+            VaultPerm vaultPerm = new VaultPerm(this);
             vaultPerm.register();
         }
     }
@@ -83,8 +83,8 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         db.createAllTables();
         getServer().getPluginManager().registerEvents(this, this);
         refreshPermissions();
-        if (vaultPerm == null && getServer().getPluginManager().isPluginEnabled("Vault")) {
-            vaultPerm = new VaultPerm(this);
+        if (!vaultEnabled && getServer().getPluginManager().isPluginEnabled("Vault")) {
+            VaultPerm vaultPerm = new VaultPerm(this);
             vaultPerm.register();
         }
     }
@@ -94,7 +94,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         for (Player player: getServer().getOnlinePlayers()) {
             resetPlayerPerms(player);
         }
-        vaultPerm = null;
     }
 
     void readConfiguration() {
@@ -586,9 +585,9 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     @EventHandler
     public void onPluginEnable(PluginEnableEvent event) {
-        if (vaultPerm != null) return;
+        if (vaultEnabled) return;
         if (!event.getPlugin().getName().equals("Vault")) return;
-        vaultPerm = new VaultPerm(this);
+        VaultPerm vaultPerm = new VaultPerm(this);
         vaultPerm.register();
     }
 
