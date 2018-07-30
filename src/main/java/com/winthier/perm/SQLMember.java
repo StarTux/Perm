@@ -13,7 +13,7 @@ import lombok.Data;
 public final class SQLMember {
     @Id private Integer id;
     @Column(nullable = false) private UUID member;
-    @Column(nullable = false) private String group;
+    @Column(nullable = false, length = 16) private String group;
 
     public SQLMember() { }
 

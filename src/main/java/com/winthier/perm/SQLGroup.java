@@ -11,10 +11,10 @@ import lombok.Data;
        uniqueConstraints = { @UniqueConstraint(columnNames = { "key" }) })
 public final class SQLGroup {
     @Id private Integer id;
-    @Column(nullable = false) private String key; // Always lower case!
+    @Column(nullable = false, length = 16) private String key; // Always lower case!
     @Column(nullable = false) private Integer priority;
-    @Column(nullable = false) private String displayName;
-    @Column private String parent;
+    @Column(nullable = false, length = 32) private String displayName;
+    @Column(nullable = true, length = 16) private String parent;
 
     public SQLGroup() { }
 

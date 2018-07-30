@@ -12,9 +12,9 @@ import lombok.Data;
        uniqueConstraints = { @UniqueConstraint(columnNames = { "entity", "permission" }) })
 public final class SQLPermission {
     @Id private Integer id;
-    @Column(nullable = false) private String entity;
+    @Column(nullable = false, length = 40) private String entity;
     @Column(nullable = false) private Boolean isGroup;
-    @Column(nullable = false) private String permission;
+    @Column(nullable = false, length = 64) private String permission;
     @Column(nullable = false) private Boolean value;
 
     public SQLPermission() { }

@@ -12,7 +12,7 @@ import lombok.Data;
        uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }) })
 public final class SQLVersion {
     @Id private Integer id;
-    @Column(nullable = false) private String name;
+    @Column(nullable = false, length = 16) private String name;
     @Column(nullable = false) private Date version;
 
     public SQLVersion() { }
