@@ -64,9 +64,12 @@ public final class PermPlugin extends JavaPlugin implements Listener {
 
     @Override
     public void onLoad() {
-        if (!vaultEnabled && getServer().getPluginManager().isPluginEnabled("Vault")) {
-            VaultPerm vaultPerm = new VaultPerm(this);
-            vaultPerm.register();
+        if (!vaultEnabled) {
+            try {
+                Class.forName("net.milkbowl.vault.permission.Permission");
+                VaultPerm vaultPerm = new VaultPerm(this);
+                vaultPerm.register();
+            } catch (ClassNotFoundException ncfe) { }
         }
     }
 

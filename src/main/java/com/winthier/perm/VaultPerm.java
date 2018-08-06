@@ -345,7 +345,7 @@ final class VaultPerm extends Permission {
      * @param permission Permission node
      * @return Success or Failure
      */
-    @Override
+    @Override @Deprecated
     public boolean playerRemove(World world, String player, String permission) {
         UUID uuid = PlayerCache.uuidForName(player);
         if (uuid == null) return false;
