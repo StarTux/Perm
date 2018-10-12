@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -316,7 +317,36 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             }
             groupName = group.getKey();
             String subcmd = args.length >= 3 ? args[2].toLowerCase() : null;
-            if ("get".equals(subcmd) && args.length == 4) {
+            if ("info".equals(subcmd) && args.length == 3) {
+                sender.sendMessage(ChatColor.YELLOW + "Group Info");
+                sender.sendMessage(ChatColor.GRAY + "Key: " + ChatColor.WHITE + group.getKey());
+                sender.sendMessage(ChatColor.GRAY + "Display: " + ChatColor.WHITE + group.getDisplayName());
+                sender.sendMessage(ChatColor.GRAY + "Members: " + ChatColor.WHITE + findGroupMembers(group.getKey()).size());
+                sender.sendMessage(ChatColor.GRAY + "Prio: " + ChatColor.WHITE + group.getPriority());
+                StringBuilder sb = new StringBuilder("");
+                String warnAboutParent = null;
+                String warnAboutPrio = null;
+                SQLGroup parentGroup = group;
+                int prio = parentGroup.getPriority();
+                while (parentGroup != null) {
+                    sb.append(" ").append(ChatColor.WHITE).append(parentGroup.getKey()).append(ChatColor.GRAY).append("(").append(parentGroup.getPriority() + ")");
+                    if (parentGroup.getParent() != null) {
+                        parentGroup = cache.findGroup(parentGroup.getParent());
+                        if (parentGroup == null) {
+                            warnAboutParent = parentGroup.getKey();
+                        } else {
+                            if (prio <= parentGroup.getPriority()) warnAboutPrio = parentGroup.getKey();
+                            prio = parentGroup.getPriority();
+                        }
+                    } else {
+                        parentGroup = null;
+                        break;
+                    }
+                }
+                sender.sendMessage(ChatColor.GRAY + "Inherit:" + ChatColor.WHITE + sb.toString());
+                if (warnAboutParent != null) sender.sendMessage(ChatColor.RED + "Warning: " + warnAboutParent + " has missing parent.");
+                if (warnAboutPrio != null) sender.sendMessage(ChatColor.RED + "Warning: " + warnAboutPrio + " has priority higher than or equal to at least one parent.");
+            } else if ("get".equals(subcmd) && args.length == 4) {
                 String perm = args[3];
                 Boolean value = findGroupPerms(groupName).get(perm);
                 sender.sendMessage(String.format("Setting for group %s of %s: %s", groupName, perm, value));
@@ -427,6 +457,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 refreshPermissions();
             } else {
                 sender.sendMessage("Usage");
+                sender.sendMessage("/perm group <name> info - List some information");
                 sender.sendMessage("/perm group <name> get <perm> - Get stored permission value");
                 sender.sendMessage("/perm group <name> show [pattern] - List assigned permissions");
                 sender.sendMessage("/perm group <name> dump [pattern] - List all permissions");
@@ -475,7 +506,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         } else if (args.length == 3 && args[0].equalsIgnoreCase("player")) {
             return Arrays.asList("get", "show", "dump", "has", "set", "unset", "addgroup", "removegroup").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
         } else if (args.length == 3 && args[0].equalsIgnoreCase("group")) {
-            return Arrays.asList("get", "show", "dump", "set", "unset", "add", "remove", "create", "setpriority", "setparent").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
+            return Arrays.asList("info", "get", "show", "dump", "set", "unset", "add", "remove", "create", "setpriority", "setparent").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
         }
         return null;
     }
