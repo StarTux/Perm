@@ -1,7 +1,7 @@
 package com.winthier.perm;
 
+import com.winthier.generic_events.GenericEvents;
 import com.winthier.generic_events.PlayerHasPermissionEvent;
-import com.winthier.playercache.PlayerCache;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -204,12 +204,12 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             sender.sendMessage("Migration complete. See console.");
         } else if ("player".equals(cmd) && args.length >= 2) {
             String playerName = args[1];
-            UUID playerUuid = PlayerCache.uuidForName(playerName);
+            UUID playerUuid = GenericEvents.cachedPlayerUuid(playerName);
             if (playerUuid == null) {
                 sender.sendMessage("Player not found: " + playerName);
                 return true;
             }
-            playerName = PlayerCache.nameForUuid(playerUuid);
+            playerName = GenericEvents.cachedPlayerName(playerUuid);
             String subcmd = args.length >= 3 ? args[2].toLowerCase() : null;
             if ("get".equals(subcmd) && args.length == 4) {
                 String perm = args[3];
@@ -357,7 +357,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("Members of group " + groupName + ":");
                 int count = 0;
                 for (UUID uuid: findGroupMembers(groupName)) {
-                    sender.sendMessage("- " + PlayerCache.nameForUuid(uuid));
+                    sender.sendMessage("- " + GenericEvents.cachedPlayerName(uuid));
                     count += 1;
                 }
                 sender.sendMessage("Total " + count);
@@ -375,12 +375,12 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 }
             } else if ("add".equals(subcmd) && args.length == 4) {
                 String playerName = args[3];
-                UUID playerUuid = PlayerCache.uuidForName(playerName);
+                UUID playerUuid = GenericEvents.cachedPlayerUuid(playerName);
                 if (playerUuid == null) {
                     sender.sendMessage("Player not found: " + playerName);
                     return true;
                 }
-                playerName = PlayerCache.nameForUuid(playerUuid);
+                playerName = GenericEvents.cachedPlayerName(playerUuid);
                 if (setMembership(playerUuid, groupName, true)) {
                     sender.sendMessage(playerName + " added to group " + groupName);
                 } else {
@@ -388,12 +388,12 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 }
             } else if ("remove".equals(subcmd) && args.length == 4) {
                 String playerName = args[3];
-                UUID playerUuid = PlayerCache.uuidForName(playerName);
+                UUID playerUuid = GenericEvents.cachedPlayerUuid(playerName);
                 if (playerUuid == null) {
                     sender.sendMessage("Player not found: " + playerName);
                     return true;
                 }
-                playerName = PlayerCache.nameForUuid(playerUuid);
+                playerName = GenericEvents.cachedPlayerName(playerUuid);
                 if (setMembership(playerUuid, groupName, false)) {
                     sender.sendMessage(playerName + " removed from group " + groupName);
                 } else {
@@ -446,7 +446,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 int count = 0;
                 for (SQLPermission permission: cache.permissions) {
                     if (permission.getIsGroup()) continue;
-                    String playerName = PlayerCache.nameForUuid(UUID.fromString(permission.getEntity()));
+                    String playerName = GenericEvents.cachedPlayerName(UUID.fromString(permission.getEntity()));
                     sender.sendMessage(playerName + ": " + permission.getPermission() + ": " + permission.getValue());
                     count += 1;
                 }

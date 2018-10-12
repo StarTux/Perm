@@ -24,7 +24,7 @@
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.13-R0.1-SNAPSHOT</version>
+      <version>1.13.1-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <!-- Lombok -->
@@ -46,13 +46,6 @@
       <groupId>net.milkbowl.vault</groupId>
       <artifactId>VaultAPI</artifactId>
       <version>1.6</version>
-      <scope>provided</scope>
-    </dependency>
-    <!-- PlayerCache -->
-    <dependency>
-      <groupId>com.winthier.playercache</groupId>
-      <artifactId>playercache</artifactId>
-      <version>0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <!-- GenericEvents -->

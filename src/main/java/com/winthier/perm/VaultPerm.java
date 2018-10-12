@@ -1,6 +1,6 @@
 package com.winthier.perm;
 
-import com.winthier.playercache.PlayerCache;
+import com.winthier.generic_events.GenericEvents;
 import java.util.List;
 import java.util.UUID;
 import net.milkbowl.vault.permission.Permission;
@@ -55,7 +55,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean has(String world, String player, String permission) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerHasPerm(uuid, permission);
     }
@@ -65,7 +65,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean has(World world, String player, String permission) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerHasPerm(uuid, permission);
     }
@@ -102,7 +102,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerHas(String world, String player, String permission) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerHasPerm(uuid, permission);
     }
@@ -112,7 +112,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerHas(World world, String player, String permission) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerHasPerm(uuid, permission);
     }
@@ -159,7 +159,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerAdd(String world, String player, String permission) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setPlayerPerm(uuid, permission, true);
     }
@@ -169,7 +169,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerAdd(World world, String player, String permission) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setPlayerPerm(uuid, permission, true);
     }
@@ -315,7 +315,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerRemove(String world, String player, String permission) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setPlayerPerm(uuid, permission, null);
     }
@@ -347,7 +347,7 @@ final class VaultPerm extends Permission {
      */
     @Override @Deprecated
     public boolean playerRemove(World world, String player, String permission) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setPlayerPerm(uuid, permission, null);
     }
@@ -495,7 +495,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerInGroup(String world, String player, String group) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerInGroup(uuid, group);
     }
@@ -505,7 +505,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerInGroup(World world, String player, String group) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerInGroup(uuid, group);
     }
@@ -544,7 +544,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerAddGroup(String world, String player, String group) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setMembership(uuid, group, true);
     }
@@ -554,7 +554,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerAddGroup(World world, String player, String group) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setMembership(uuid, group, true);
     }
@@ -593,7 +593,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerRemoveGroup(String world, String player, String group) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setMembership(uuid, group, false);
     }
@@ -603,7 +603,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public boolean playerRemoveGroup(World world, String player, String group) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setMembership(uuid, group, false);
     }
@@ -642,7 +642,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public String[] getPlayerGroups(String world, String player) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return new String[0];
         return permPlugin.findPlayerGroups(uuid).toArray(new String[0]);
     }
@@ -652,7 +652,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public String[] getPlayerGroups(World world, String player) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return new String[0];
         return permPlugin.findPlayerGroups(uuid).toArray(new String[0]);
     }
@@ -689,7 +689,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public String getPrimaryGroup(String world, String player) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return permPlugin.getDefaultGroup();
         List<String> groups = permPlugin.findPlayerGroups(uuid);
         if (groups.isEmpty()) return permPlugin.getDefaultGroup();
@@ -710,7 +710,7 @@ final class VaultPerm extends Permission {
      */
     @Override
     public String getPrimaryGroup(World world, String player) {
-        UUID uuid = PlayerCache.uuidForName(player);
+        UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return permPlugin.getDefaultGroup();
         List<String> groups = permPlugin.findPlayerGroups(uuid);
         if (groups.isEmpty()) return permPlugin.getDefaultGroup();
