@@ -1,10 +1,22 @@
 package com.winthier.perm;
 
+import cn.nukkit.Player;
+import cn.nukkit.command.Command;
+import cn.nukkit.command.CommandSender;
+import cn.nukkit.event.EventHandler;
+import cn.nukkit.event.EventPriority;
+import cn.nukkit.event.Listener;
+import cn.nukkit.event.player.PlayerLoginEvent;
+import cn.nukkit.permission.Permission;
+import cn.nukkit.permission.PermissionAttachment;
+import cn.nukkit.permission.PermissionAttachmentInfo;
+import cn.nukkit.plugin.PluginBase;
+import cn.nukkit.scheduler.NukkitRunnable;
+import cn.nukkit.utils.TextFormat;
 import com.winthier.generic_events.GenericEvents;
 import com.winthier.generic_events.PlayerHasPermissionEvent;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -13,34 +25,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.Getter;
-import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerLoginEvent;
-import org.bukkit.event.server.PluginEnableEvent;
-import org.bukkit.permissions.Permission;
-import org.bukkit.permissions.PermissionAttachment;
-import org.bukkit.permissions.PermissionAttachmentInfo;
-import org.bukkit.permissions.PermissionDefault;
-import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
 
 @Getter
-public final class PermPlugin extends JavaPlugin implements Listener {
+public final class PermPlugin extends PluginBase implements Listener {
     private SQLDatabase db;
     private Cache cache;
     private String defaultGroup = "Guest";
     private int refreshInterval = 30;
     private boolean migrationEnabled = false;
     private boolean refreshScheduled = false;
-    private boolean vaultEnabled = false;
-    private BukkitRunnable updateTask;
+    private NukkitRunnable updateTask;
 
     static final class Cache {
         private List<SQLGroup> groups;
@@ -64,17 +59,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     @Override
-    public void onLoad() {
-        if (!vaultEnabled) {
-            try {
-                Class.forName("net.milkbowl.vault.permission.Permission");
-                VaultPerm vaultPerm = new VaultPerm(this);
-                vaultPerm.register();
-            } catch (ClassNotFoundException ncfe) { }
-        }
-    }
-
-    @Override
     public void onEnable() {
         reloadConfig();
         saveDefaultConfig();
@@ -87,15 +71,11 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         db.createAllTables();
         getServer().getPluginManager().registerEvents(this, this);
         refreshPermissions();
-        if (!vaultEnabled && getServer().getPluginManager().isPluginEnabled("Vault")) {
-            VaultPerm vaultPerm = new VaultPerm(this);
-            vaultPerm.register();
-        }
     }
 
     @Override
     public void onDisable() {
-        for (Player player: getServer().getOnlinePlayers()) {
+        for (Player player: getServer().getOnlinePlayers().values()) {
             resetPlayerPerms(player);
         }
     }
@@ -110,7 +90,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             updateTask = null;
         }
         if (refreshInterval > 0) {
-            updateTask = new BukkitRunnable() {
+            updateTask = new NukkitRunnable() {
                     @Override public void run() {
                         testVersion();
                     }
@@ -176,7 +156,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             }
         }
         this.cache = newCache;
-        for (Player player: getServer().getOnlinePlayers()) {
+        for (Player player: getServer().getOnlinePlayers().values()) {
             setupPlayerPerms(player);
         }
     }
@@ -252,7 +232,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("Total " + count);
             } else if ("has".equals(subcmd) && args.length == 4) {
                 String perm = args[3];
-                Player player = getServer().getPlayer(playerUuid);
+                Player player = getServer().getPlayer(playerUuid).orElse(null);
                 if (player == null) {
                     sender.sendMessage(playerName + " is not online!");
                     return true;
@@ -295,7 +275,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("/perm player <name> get <perm> - Get stored permission value");
                 sender.sendMessage("/perm player <name> show [pattern] - List assigned permissions");
                 sender.sendMessage("/perm player <name> dump [pattern] - List all permissions");
-                sender.sendMessage("/perm player <name> has <perm> - Bukkit hasPermission check");
+                sender.sendMessage("/perm player <name> has <perm> - Nukkit hasPermission check");
                 sender.sendMessage("/perm player <name> set <perm> [value] - Assign permission");
                 sender.sendMessage("/perm player <name> unset <perm> - Unassign permission");
                 sender.sendMessage("/perm player <name> addgroup <group> - Add player to group");
@@ -318,18 +298,18 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             groupName = group.getKey();
             String subcmd = args.length >= 3 ? args[2].toLowerCase() : null;
             if ("info".equals(subcmd) && args.length == 3) {
-                sender.sendMessage(ChatColor.YELLOW + "Group Info");
-                sender.sendMessage(ChatColor.GRAY + "Key: " + ChatColor.WHITE + group.getKey());
-                sender.sendMessage(ChatColor.GRAY + "Display: " + ChatColor.WHITE + group.getDisplayName());
-                sender.sendMessage(ChatColor.GRAY + "Members: " + ChatColor.WHITE + findGroupMembers(group.getKey()).size());
-                sender.sendMessage(ChatColor.GRAY + "Prio: " + ChatColor.WHITE + group.getPriority());
+                sender.sendMessage(TextFormat.YELLOW + "Group Info");
+                sender.sendMessage(TextFormat.GRAY + "Key: " + TextFormat.WHITE + group.getKey());
+                sender.sendMessage(TextFormat.GRAY + "Display: " + TextFormat.WHITE + group.getDisplayName());
+                sender.sendMessage(TextFormat.GRAY + "Members: " + TextFormat.WHITE + findGroupMembers(group.getKey()).size());
+                sender.sendMessage(TextFormat.GRAY + "Prio: " + TextFormat.WHITE + group.getPriority());
                 StringBuilder sb = new StringBuilder("");
                 String warnAboutParent = null;
                 String warnAboutPrio = null;
                 SQLGroup parentGroup = group;
                 int prio = parentGroup.getPriority();
                 while (parentGroup != null) {
-                    sb.append(" ").append(ChatColor.WHITE).append(parentGroup.getKey()).append(ChatColor.GRAY).append("(").append(parentGroup.getPriority() + ")");
+                    sb.append(" ").append(TextFormat.WHITE).append(parentGroup.getKey()).append(TextFormat.GRAY).append("(").append(parentGroup.getPriority() + ")");
                     if (parentGroup.getParent() != null) {
                         parentGroup = cache.findGroup(parentGroup.getParent());
                         if (parentGroup == null) {
@@ -343,9 +323,9 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                         break;
                     }
                 }
-                sender.sendMessage(ChatColor.GRAY + "Inherit:" + ChatColor.WHITE + sb.toString());
-                if (warnAboutParent != null) sender.sendMessage(ChatColor.RED + "Warning: " + warnAboutParent + " has missing parent.");
-                if (warnAboutPrio != null) sender.sendMessage(ChatColor.RED + "Warning: " + warnAboutPrio + " has priority higher than or equal to at least one parent.");
+                sender.sendMessage(TextFormat.GRAY + "Inherit:" + TextFormat.WHITE + sb.toString());
+                if (warnAboutParent != null) sender.sendMessage(TextFormat.RED + "Warning: " + warnAboutParent + " has missing parent.");
+                if (warnAboutPrio != null) sender.sendMessage(TextFormat.RED + "Warning: " + warnAboutPrio + " has priority higher than or equal to at least one parent.");
             } else if ("get".equals(subcmd) && args.length == 4) {
                 String perm = args[3];
                 Boolean value = findGroupPerms(groupName).get(perm);
@@ -493,24 +473,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         return true;
     }
 
-    @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 0) return null;
-        String pat = args[args.length - 1];
-        if (args.length == 1) {
-            return Arrays.asList("player", "group", "list", "reload", "refresh").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("list")) {
-            return Arrays.asList("groups", "playerperms").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("group")) {
-            return getGroups().stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("player")) {
-            return Arrays.asList("get", "show", "dump", "has", "set", "unset", "addgroup", "removegroup").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("group")) {
-            return Arrays.asList("info", "get", "show", "dump", "set", "unset", "add", "remove", "create", "setpriority", "setparent").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
-        }
-        return null;
-    }
-
     void testVersion() {
         SQLVersion version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
         if (version != null && !version.getVersion().equals(cache.version.getVersion())) {
@@ -586,7 +548,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     void resetPlayerPerms(Player player) {
-        for (PermissionAttachmentInfo info: player.getEffectivePermissions()) {
+        for (PermissionAttachmentInfo info: player.getEffectivePermissions().values()) {
             PermissionAttachment attach = info.getAttachment();
             if (attach != null && attach.getPlugin().equals(this)) {
                 attach.remove();
@@ -604,7 +566,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         String motherPerm = "Perm-" + player.getUniqueId();
         Permission permission = getServer().getPluginManager().getPermission(motherPerm);
         if (permission == null) {
-            permission = new Permission(motherPerm, PermissionDefault.FALSE, perms);
+            permission = new Permission(motherPerm, "", Permission.DEFAULT_FALSE, perms);
             getServer().getPluginManager().addPermission(permission);
         } else {
             permission.getChildren().clear();
@@ -615,14 +577,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         } else {
             permission.recalculatePermissibles();
         }
-    }
-
-    @EventHandler
-    public void onPluginEnable(PluginEnableEvent event) {
-        if (vaultEnabled) return;
-        if (!event.getPlugin().getName().equals("Vault")) return;
-        VaultPerm vaultPerm = new VaultPerm(this);
-        vaultPerm.register();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

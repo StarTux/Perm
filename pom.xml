@@ -2,16 +2,16 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.winthier.perm</groupId>
-  <artifactId>perm</artifactId>
+  <artifactId>perm-nukkit</artifactId>
   <packaging>jar</packaging>
   <version>0.1-SNAPSHOT</version>
   <name>Perm</name>
   <url>http://cavetale.com</url>
   <repositories>
-    <!-- Spigot Repo -->
+    <!-- Nukkit Repo -->
     <repository>
-      <id>spigot-repo</id>
-      <url>https://hub.spigotmc.org/nexus/content/groups/public/</url>
+      <id>nukkit-repo</id>
+      <url>https://repo.nukkitx.com/snapshot</url>
     </repository>
     <!-- Cavetale Repo -->
     <repository>
@@ -20,11 +20,11 @@
     </repository>
   </repositories>
   <dependencies>
-    <!-- Spigot-API -->
+    <!-- Nukkit API -->
     <dependency>
-      <groupId>org.spigotmc</groupId>
-      <artifactId>spigot-api</artifactId>
-      <version>1.13.1-R0.1-SNAPSHOT</version>
+      <groupId>cn.nukkit</groupId>
+      <artifactId>nukkit</artifactId>
+      <version>1.0-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <!-- Lombok -->
@@ -37,21 +37,14 @@
     <!-- SQL -->
     <dependency>
       <groupId>com.winthier.sql</groupId>
-      <artifactId>sql</artifactId>
+      <artifactId>sql-nukkit</artifactId>
       <version>0.1-SNAPSHOT</version>
-      <scope>provided</scope>
-    </dependency>
-    <!-- Vault -->
-    <dependency>
-      <groupId>net.milkbowl.vault</groupId>
-      <artifactId>VaultAPI</artifactId>
-      <version>1.6</version>
       <scope>provided</scope>
     </dependency>
     <!-- GenericEvents -->
     <dependency>
       <groupId>com.winthier.generic_events</groupId>
-      <artifactId>generic_events</artifactId>
+      <artifactId>generic_events-nukkit</artifactId>
       <version>0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>

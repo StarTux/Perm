@@ -1,5 +1,5 @@
 # Perm
-This is a simple permissions plugin intended for a multi-server network. It provides player permissions and group permissions. It requires the [SQL plugin](https://github.com/StarTux/SQL) and supports [Vault](https://dev.bukkit.org/projects/vault). Permissions are best changed with a simple but rich set of admin commands.
+This is a simple permissions plugin intended for a multi-server network. It provides player permissions and group permissions. It requires the [SQL plugin](https://github.com/StarTux/SQL). Permissions are best changed with a simple but rich set of admin commands.
 
 ## Commands
 The admin command comes with sufficient online help. Just type any command and the full syntax will be listed. Functions include creating and deleting groups, adding players to groups or removing them again, and assigning permissions to players or groups.

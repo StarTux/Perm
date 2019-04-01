@@ -1,12 +1,12 @@
 name: Perm
 description: Permission plugin
 author: StarTux
-version: 0.1
-api-version: 1.13
+version: "0.1"
+api: ["1.0.0"]
 website: http://cavetale.com
 main: com.winthier.perm.PermPlugin
-depend: [ SQL, GenericEvents ]
-softdepend: [ Vault ]
+depend: [SQL, GenericEvents]
+softdepend: []
 commands:
   perm:
     description: Admin command
