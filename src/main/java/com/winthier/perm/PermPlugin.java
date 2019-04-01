@@ -60,7 +60,6 @@ public final class PermPlugin extends PluginBase implements Listener {
 
     @Override
     public void onEnable() {
-        reloadConfig();
         saveDefaultConfig();
         readConfiguration();
         db = new SQLDatabase(this);
