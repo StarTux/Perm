@@ -489,7 +489,7 @@ public final class PermPlugin extends PluginBase implements Listener {
                 assignedGroups.add(group.getKey());
             }
         }
-        if (assignedGroups.isEmpty()) assignedGroups.add(defaultGroup);
+        if (assignedGroups.isEmpty()) assignedGroups.add(defaultGroup.toLowerCase());
         HashMap<String, Boolean> deepGroupPerms = cache.deepGroupPerms.get(assignedGroups);
         if (deepGroupPerms == null) {
             deepGroupPerms = new HashMap<>();
