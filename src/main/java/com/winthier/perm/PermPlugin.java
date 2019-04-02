@@ -111,6 +111,7 @@ public final class PermPlugin extends PluginBase implements Listener {
     }
 
     void refreshPermissions() {
+        getLogger().info("Refreshing permissions...");
         Cache newCache = new Cache();
         newCache.groups = db.find(SQLGroup.class).findList();
         newCache.members = db.find(SQLMember.class).findList();
@@ -215,11 +216,10 @@ public final class PermPlugin extends PluginBase implements Listener {
                 sender.sendMessage("Total " + count);
             } else if ("dump".equals(subcmd) && (args.length == 3 || args.length == 4)) {
                 String pattern = args.length >= 4 ? args[3].toLowerCase() : null;
-                if (pattern == null) {
-                    sender.sendMessage("All permissions of " + playerName + ":");
-                } else {
-                    sender.sendMessage("All permissions of " + playerName + " matching " + pattern + ":");
-                }
+                sender.sendMessage("All permissions of " + playerName
+                                   + " (" + playerUuid + ")"
+                                   + (pattern != null ? " matching " + pattern : "")
+                                   + ":");
                 int count = 0;
                 for (Map.Entry<String, Boolean> entry: findPlayerPerms(playerUuid).entrySet()) {
                     String perm = entry.getKey();
@@ -576,6 +576,7 @@ public final class PermPlugin extends PluginBase implements Listener {
         } else {
             permission.recalculatePermissibles();
         }
+        getLogger().info("Assigned " + perms.size() + " permissions to " + player.getName() + " (" + player.getUniqueId() + ").");
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
