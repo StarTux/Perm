@@ -290,6 +290,25 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 } else {
                     sender.sendMessage(playerName + " is not in group " + groupName);
                 }
+            } else if ("setgroup".equals(subcmd) && args.length == 4) {
+                String groupName = args[3];
+                if (cache.findGroup(groupName) == null) {
+                    sender.sendMessage("Group not found: " + groupName);
+                    return true;
+                }
+                List<String> groups = findPlayerGroups(playerUuid);
+                if (groups.size() == 1 && groups.get(0).equals(groupName.toLowerCase())) {
+                    sender.sendMessage(playerName + " already in group " + groupName);
+                    return true;
+                }
+                db.find(SQLMember.class)
+                    .eq("member", playerUuid)
+                    .delete();
+                db.insert(new SQLMember(playerUuid, groupName.toLowerCase()));
+                updateVersion();
+                refreshPermissions();
+                sender.sendMessage(playerName + " now in group " + groupName);
+                return true;
             } else {
                 sender.sendMessage("Usage");
                 sender.sendMessage("/perm player <name> get <perm> - Get stored permission value");
@@ -300,6 +319,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("/perm player <name> unset <perm> - Unassign permission");
                 sender.sendMessage("/perm player <name> addgroup <group> - Add player to group");
                 sender.sendMessage("/perm player <name> removegroup <group> - Remove player from group");
+                sender.sendMessage("/perm player <name> setgroup <group> - Set sole player group");
             }
         } else if ("group".equals(cmd) && args.length >= 2) {
             String groupName = args[1];
