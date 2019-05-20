@@ -9,7 +9,9 @@ import lombok.Data;
 
 @Data
 @Table(name = "members",
-       uniqueConstraints = { @UniqueConstraint(columnNames = { "member", "group" }) })
+       uniqueConstraints =
+       @UniqueConstraint(columnNames = { "member",
+                                         "group" }))
 public final class SQLMember {
     @Id private Integer id;
     @Column(nullable = false) private UUID member;
@@ -17,7 +19,7 @@ public final class SQLMember {
 
     public SQLMember() { }
 
-    SQLMember(UUID member, String group) {
+    SQLMember(final UUID member, final String group) {
         this.member = member;
         this.group = group;
     }

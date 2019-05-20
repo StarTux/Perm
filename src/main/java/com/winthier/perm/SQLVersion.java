@@ -9,7 +9,8 @@ import lombok.Data;
 
 @Data
 @Table(name = "versions",
-       uniqueConstraints = { @UniqueConstraint(columnNames = { "name" }) })
+       uniqueConstraints =
+       @UniqueConstraint(columnNames = { "name" }))
 public final class SQLVersion {
     @Id private Integer id;
     @Column(nullable = false, length = 16) private String name;
@@ -17,7 +18,7 @@ public final class SQLVersion {
 
     public SQLVersion() { }
 
-    public SQLVersion(String name) {
+    public SQLVersion(final String name) {
         this.name = name;
         this.version = new Date();
     }

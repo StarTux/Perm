@@ -13,18 +13,22 @@ import org.bukkit.plugin.ServicePriority;
 final class VaultPerm extends Permission {
     private final PermPlugin permPlugin;
 
-    VaultPerm(PermPlugin plugin) {
+    VaultPerm(final PermPlugin plugin) {
         this.plugin = plugin;
         this.permPlugin = plugin;
     }
 
     void register() {
-        permPlugin.getServer().getServicesManager().register(Permission.class, this, permPlugin, ServicePriority.Highest);
+        permPlugin.getServer().getServicesManager()
+            .register(Permission.class,
+                      this,
+                      permPlugin,
+                      ServicePriority.Highest);
         plugin.getLogger().info("Vault permissions provider registered");
     }
 
     /**
-     * Gets name of permission method
+     * Gets name of permission method.
      * @return Name of Permission Method
      */
     @Override
@@ -42,7 +46,8 @@ final class VaultPerm extends Permission {
     }
 
     /**
-     * Returns if the permission system is or attempts to be compatible with super-perms.
+     * Returns if the permission system is or attempts to be
+     * compatible with super-perms.
      * @return True if this permission implementation works with super-perms
      */
     @Override
@@ -51,29 +56,37 @@ final class VaultPerm extends Permission {
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String,
+     * OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean has(String world, String player, String permission) {
+    public boolean has(final String world,
+                       final String player,
+                       final String permission) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerHasPerm(uuid, permission);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String,
+     * OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean has(World world, String player, String permission) {
+    public boolean has(final World world,
+                       final String player,
+                       final String permission) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerHasPerm(uuid, permission);
     }
 
     /**
-     * Checks if a CommandSender has a permission node.
-     * This will return the result of bukkits, generic .hasPermission() method and is identical in all cases.
-     * This method will explicitly fail if the registered permission system does not register permissions in bukkit.
+     * Checks if a CommandSender has a permission node.  This will
+     * return the result of bukkits, generic {@code .hasPermission()}
+     * method and is identical in all cases.  This method will
+     * explicitly fail if the registered permission system does not
+     * register permissions in bukkit.
      *
      * For easy checking of a commandsender
      * @param sender to check permissions on
@@ -81,37 +94,48 @@ final class VaultPerm extends Permission {
      * @return true if the sender has the permission
      */
     @Override
-    public boolean has(CommandSender sender, String permission) {
+    public boolean has(final CommandSender sender,
+                       final String permission) {
         if (!(sender instanceof OfflinePlayer)) return false;
-        return permPlugin.playerHasPerm(((OfflinePlayer)sender).getUniqueId(), permission);
+        return permPlugin.playerHasPerm(((OfflinePlayer) sender)
+                                        .getUniqueId(),
+                                        permission);
     }
 
     /**
-     * Checks if player has a permission node. (Short for playerHas(...)
+     * Checks if player has a permission node. (Short for {@code
+     * playerHas()}).
      * @param player Player Object
      * @param permission Permission node
      * @return Success or Failure
      */
     @Override
-    public boolean has(Player player, String permission) {
+    public boolean has(final Player player,
+                       final String permission) {
         return permPlugin.playerHasPerm(player.getUniqueId(), permission);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String,
+     * OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerHas(String world, String player, String permission) {
+    public boolean playerHas(final String world,
+                             final String player,
+                             final String permission) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerHasPerm(uuid, permission);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String,
+     * OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerHas(World world, String player, String permission) {
+    public boolean playerHas(final World world,
+                             final String player,
+                             final String permission) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerHasPerm(uuid, permission);
@@ -119,8 +143,10 @@ final class VaultPerm extends Permission {
 
     /**
      * Checks if player has a permission node.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world String world name
      * @param player to check
@@ -128,29 +154,36 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerHas(String world, OfflinePlayer player, String permission) {
+    public boolean playerHas(final String world,
+                             final OfflinePlayer player,
+                             final String permission) {
         return permPlugin.playerHasPerm(player.getUniqueId(), permission);
     }
 
     /**
      * Checks if player has a permission node.
-     * Defaults to world-specific permission check if the permission system supports it.
-     * See {@link #playerHas(String, OfflinePlayer, String)} for explicit global or world checks.
+     * Defaults to world-specific permission check if the permission
+     * system supports it.
+     * See {@link #playerHas(String, OfflinePlayer, String)} for
+     * explicit global or world checks.
      *
      * @param player Player Object
      * @param permission Permission node
      * @return Success or Failure
      */
     @Override
-    public boolean playerHas(Player player, String permission) {
+    public boolean playerHas(final Player player,
+                             final String permission) {
         return permPlugin.playerHasPerm(player.getUniqueId(), permission);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerAdd(String, OfflinePlayer, String)} instead.
-     * Add permission to a player.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * @deprecated As of VaultAPI 1.4 use {@link #playerAdd(String,
+     * OfflinePlayer, String)} instead.
+     * Add permission to a player.  Supports NULL value for World if
+     * the permission system registered supports global permissions.
+     * May return odd values if the servers registered permission
+     * system does not have a global permission store.
      *
      * @param world World name
      * @param player Player name
@@ -158,17 +191,22 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerAdd(String world, String player, String permission) {
+    public boolean playerAdd(final String world,
+                             final String player,
+                             final String permission) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setPlayerPerm(uuid, permission, true);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerAdd(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link #playerAdd(String,
+     * OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerAdd(World world, String player, String permission) {
+    public boolean playerAdd(final World world,
+                             final String player,
+                             final String permission) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setPlayerPerm(uuid, permission, true);
@@ -176,8 +214,10 @@ final class VaultPerm extends Permission {
 
     /**
      * Add permission to a player.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world String world name
      * @param player to add to
@@ -185,62 +225,82 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerAdd(String world, OfflinePlayer player, String permission) {
+    public boolean playerAdd(final String world,
+                             final OfflinePlayer player,
+                             final String permission) {
         return permPlugin.setPlayerPerm(player.getUniqueId(), permission, true);
     }
 
     /**
-     * Add permission to a player ONLY for the world the player is currently on.
-     * This is a world-specific operation, if you want to add global permission you must explicitly use NULL for the world.
-     * See {@link #playerAdd(String, OfflinePlayer, String)} for global permission use.
+     * Add permission to a player ONLY for the world the player is
+     * currently on.
+     * This is a world-specific operation, if you want to add global
+     * permission you must explicitly use NULL for the world.  See
+     * {@link #playerAdd(String, OfflinePlayer, String)} for global
+     * permission use.
      *
      * @param player Player Object
      * @param permission Permission node
      * @return Success or Failure
      */
     @Override
-    public boolean playerAdd(Player player, String permission) {
+    public boolean playerAdd(final Player player,
+                             final String permission) {
         return playerAdd(player.getWorld().getName(), player, permission);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerAddTransient(OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerAddTransient(OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerAddTransient(String player, String permission) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("playerAddTransient() not supported!");
+    public boolean playerAddTransient(final String player,
+                                      final String permission)
+        throws UnsupportedOperationException {
+        throw new UnsupportedOperationException("playerAddTransient()"
+                                                + " not supported!");
     }
 
     /**
      * Add transient permission to a player.
-     * This implementation can be used by any subclass which implements a "pure" superperms plugin, i.e.
-     * one that only needs the built-in Bukkit API to add transient permissions to a player.
+     * This implementation can be used by any subclass which
+     * implements a "pure" superperms plugin, i.e.  one that only
+     * needs the built-in Bukkit API to add transient permissions to a
+     * player.
      *
      * @param player to add to
      * @param permission Permission node
      * @return Success or Failure
      */
     @Override
-    public boolean playerAddTransient(OfflinePlayer player, String permission) throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("playerAddTransient() not supported!");
+    public boolean playerAddTransient(final OfflinePlayer player,
+                                      final String permission)
+        throws UnsupportedOperationException {
+        throw new UnsupportedOperationException("playerAddTransient()"
+                                                + " not supported!");
     }
 
     /**
      * Add transient permission to a player.
-     * This operation adds a permission onto the player object in bukkit via Bukkit's permission interface.
+     * This operation adds a permission onto the player object in
+     * bukkit via Bukkit's permission interface.
      *
      * @param player Player Object
      * @param permission Permission node
      * @return Success or Failure
      */
     @Override
-    public boolean playerAddTransient(Player player, String permission) {
-        throw new UnsupportedOperationException("playerAddTransient() not supported!");
+    public boolean playerAddTransient(final Player player,
+                                      final String permission) {
+        throw new UnsupportedOperationException("playerAddTransient()"
+                                                + " not supported!");
     }
 
     /**
-     * Adds a world specific transient permission to the player, may only work with some permission managers.
-     * Defaults to GLOBAL permissions for any permission system that does not support world-specific transient permissions!
+     * Adds a world specific transient permission to the player, may
+     * only work with some permission managers.
+     * Defaults to GLOBAL permissions for any permission system that
+     * does not support world-specific transient permissions!
      *
      * @param worldName to check on
      * @param player to add to
@@ -248,13 +308,18 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerAddTransient(String worldName, OfflinePlayer player, String permission) {
-        throw new UnsupportedOperationException("playerAddTransient() not supported!");
+    public boolean playerAddTransient(final String worldName,
+                                      final OfflinePlayer player,
+                                      final String permission) {
+        throw new UnsupportedOperationException("playerAddTransient()"
+                                                + " not supported!");
     }
 
     /**
-     * Adds a world specific transient permission to the player, may only work with some permission managers.
-     * Defaults to GLOBAL permissions for any permission system that does not support world-specific transient permissions!
+     * Adds a world specific transient permission to the player, may
+     * only work with some permission managers.
+     * Defaults to GLOBAL permissions for any permission system that
+     * does not support world-specific transient permissions!
      *
      * @param worldName to check on
      * @param player to check
@@ -262,29 +327,42 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerAddTransient(String worldName, Player player, String permission) {
-        throw new UnsupportedOperationException("playerAddTransient() not supported!");
+    public boolean playerAddTransient(final String worldName,
+                                      final Player player,
+                                      final String permission) {
+        throw new UnsupportedOperationException("playerAddTransient()"
+                                                + " not supported!");
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerAddTransient(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerAddTransient(String, OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerAddTransient(String worldName, String player, String permission) {
-        throw new UnsupportedOperationException("playerAddTransient() not supported!");
+    public boolean playerAddTransient(final String worldName,
+                                      final String player,
+                                      final String permission) {
+        throw new UnsupportedOperationException("playerAddTransient()"
+                                                + " not supported!");
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerRemoveTransient(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerRemoveTransient(String, OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerRemoveTransient(String worldName, String player, String permission) {
-        throw new UnsupportedOperationException("playerRemoveTransient() not supported!");
+    public boolean playerRemoveTransient(final String worldName,
+                                         final String player,
+                                         final String permission) {
+        throw new UnsupportedOperationException("playerRemoveTransient()"
+                                                + " not supported!");
     }
 
     /**
-     * Removes a world specific transient permission from the player, may only work with some permission managers.
-     * Defaults to GLOBAL permissions for any permission system that does not support world-specific transient permissions!
+     * Removes a world specific transient permission from the player,
+     * may only work with some permission managers.
+     * Defaults to GLOBAL permissions for any permission system that
+     * does not support world-specific transient permissions!
      *
      * @param worldName to remove for
      * @param player to remove for
@@ -292,13 +370,18 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerRemoveTransient(String worldName, OfflinePlayer player, String permission) {
-        throw new UnsupportedOperationException("playerRemoveTransient() not supported!");
+    public boolean playerRemoveTransient(final String worldName,
+                                         final OfflinePlayer player,
+                                         final String permission) {
+        throw new UnsupportedOperationException("playerRemoveTransient()"
+                                                + " not supported!");
     }
 
     /**
-     * Removes a world specific transient permission from the player, may only work with some permission managers.
-     * Defaults to GLOBAL permissions for any permission system that does not support world-specific transient permissions!
+     * Removes a world specific transient permission from the player,
+     * may only work with some permission managers.
+     * Defaults to GLOBAL permissions for any permission system that
+     * does not support world-specific transient permissions!
      *
      * @param worldName to check on
      * @param player to check
@@ -306,15 +389,21 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerRemoveTransient(String worldName, Player player, String permission) {
-        throw new UnsupportedOperationException("playerRemoveTransient() not supported!");
+    public boolean playerRemoveTransient(final String worldName,
+                                         final Player player,
+                                         final String permission) {
+        throw new UnsupportedOperationException("playerRemoveTransient()"
+                                                + " not supported!");
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerRemove(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link #playerRemove(String,
+     * OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerRemove(String world, String player, String permission) {
+    public boolean playerRemove(final String world,
+                                final String player,
+                                final String permission) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setPlayerPerm(uuid, permission, null);
@@ -322,8 +411,10 @@ final class VaultPerm extends Permission {
 
     /**
      * Remove permission from a player.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World name
      * @param player OfflinePlayer
@@ -331,14 +422,20 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerRemove(String world, OfflinePlayer player, String permission) {
-        return permPlugin.setPlayerPerm(player.getUniqueId(), permission, null);
+    public boolean playerRemove(final String world,
+                                final OfflinePlayer player,
+                                final String permission) {
+        return permPlugin.setPlayerPerm(player.getUniqueId(),
+                                        permission,
+                                        null);
     }
 
     /**
      * Remove permission from a player.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World name
      * @param player Player name
@@ -346,7 +443,9 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override @Deprecated
-    public boolean playerRemove(World world, String player, String permission) {
+    public boolean playerRemove(final World world,
+                                final String player,
+                                final String permission) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setPlayerPerm(uuid, permission, null);
@@ -354,38 +453,47 @@ final class VaultPerm extends Permission {
 
     /**
      * Remove permission from a player.
-     * Will attempt to remove permission from the player on the player's current world.  This is NOT a global operation.
+     * Will attempt to remove permission from the player on the
+     * player's current world.  This is NOT a global operation.
      *
      * @param player Player Object
      * @param permission Permission node
      * @return Success or Failure
      */
     @Override
-    public boolean playerRemove(Player player, String permission) {
+    public boolean playerRemove(final Player player,
+                                final String permission) {
         return playerRemove(player.getWorld().getName(), player, permission);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerRemoveTransient(OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerRemoveTransient(OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerRemoveTransient(String player, String permission) {
-        throw new UnsupportedOperationException("playerRemoveTransient() not supported!");
+    public boolean playerRemoveTransient(final String player,
+                                         final String permission) {
+        throw new UnsupportedOperationException("playerRemoveTransient()"
+                                                + " not supported!");
     }
 
     /**
      * Remove transient permission from a player.
-     * This implementation can be used by any subclass which implements a "pure" superperms plugin, i.e.
-     * one that only needs the built-in Bukkit API to remove transient permissions from a player.  Any subclass
-     * implementing a plugin which provides its own API for this needs to override this method.
+     * This implementation can be used by any subclass which
+     * implements a "pure" superperms plugin, i.e.  one that only
+     * needs the built-in Bukkit API to remove transient permissions
+     * from a player.  Any subclass implementing a plugin which
+     * provides its own API for this needs to override this method.
      *
      * @param player OfflinePlayer
      * @param permission Permission node
      * @return Success or Failure
      */
     @Override
-    public boolean playerRemoveTransient(OfflinePlayer player, String permission) {
-        throw new UnsupportedOperationException("playerRemoveTransient() not supported!");
+    public boolean playerRemoveTransient(final OfflinePlayer player,
+                                         final String permission) {
+        throw new UnsupportedOperationException("playerRemoveTransient()"
+                                                + " not supported!");
     }
 
     /**
@@ -396,14 +504,18 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerRemoveTransient(Player player, String permission) {
-        throw new UnsupportedOperationException("playerRemoveTransient() not supported!");
+    public boolean playerRemoveTransient(final Player player,
+                                         final String permission) {
+        throw new UnsupportedOperationException("playerRemoveTransient()"
+                                                + " not supported!");
     }
 
     /**
      * Checks if group has a permission node.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World name
      * @param group Group name
@@ -411,14 +523,18 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean groupHas(String world, String group, String permission) {
+    public boolean groupHas(final String world,
+                            final String group,
+                            final String permission) {
         return permPlugin.groupHasPerm(group, permission);
     }
 
     /**
      * Checks if group has a permission node.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World Object
      * @param group Group name
@@ -426,14 +542,18 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean groupHas(World world, String group, String permission) {
+    public boolean groupHas(final World world,
+                            final String group,
+                            final String permission) {
         return permPlugin.groupHasPerm(group, permission);
     }
 
     /**
      * Add permission to a group.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World name
      * @param group Group name
@@ -441,14 +561,18 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean groupAdd(String world, String group, String permission) {
+    public boolean groupAdd(final String world,
+                            final String group,
+                            final String permission) {
         return permPlugin.setGroupPerm(group, permission, true);
     }
 
     /**
      * Add permission to a group.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World Object
      * @param group Group name
@@ -456,14 +580,18 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean groupAdd(World world, String group, String permission) {
+    public boolean groupAdd(final World world,
+                            final String group,
+                            final String permission) {
         return permPlugin.setGroupPerm(group, permission, true);
     }
 
     /**
      * Remove permission from a group.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World name
      * @param group Group name
@@ -471,14 +599,18 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean groupRemove(String world, String group, String permission) {
+    public boolean groupRemove(final String world,
+                               final String group,
+                               final String permission) {
         return permPlugin.setGroupPerm(group, permission, null);
     }
 
     /**
      * Remove permission from a group.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World Object
      * @param group Group name
@@ -486,25 +618,33 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean groupRemove(World world, String group, String permission) {
+    public boolean groupRemove(final World world,
+                               final String group,
+                               final String permission) {
         return permPlugin.setGroupPerm(group, permission, null);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerInGroup(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerInGroup(String, OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerInGroup(String world, String player, String group) {
+    public boolean playerInGroup(final String world,
+                                 final String player,
+                                 final String group) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerInGroup(uuid, group);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerInGroup(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerInGroup(String, OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerInGroup(World world, String player, String group) {
+    public boolean playerInGroup(final World world,
+                                 final String player,
+                                 final String group) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.playerInGroup(uuid, group);
@@ -512,8 +652,10 @@ final class VaultPerm extends Permission {
 
     /**
      * Check if player is member of a group.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World Object
      * @param player to check
@@ -521,39 +663,50 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerInGroup(String world, OfflinePlayer player, String group) {
+    public boolean playerInGroup(final String world,
+                                 final OfflinePlayer player,
+                                 final String group) {
         return permPlugin.playerInGroup(player.getUniqueId(), group);
     }
 
     /**
      * Check if player is member of a group.
-     * This method will ONLY check groups for which the player is in that are defined for the current world.
-     * This may result in odd return behaviour depending on what permission system has been registered.
+     * This method will ONLY check groups for which the player is in
+     * that are defined for the current world.  This may result in odd
+     * return behaviour depending on what permission system has been
+     * registered.
      *
      * @param player Player Object
      * @param group Group name
      * @return Success or Failure
      */
     @Override
-    public boolean playerInGroup(Player player, String group) {
+    public boolean playerInGroup(final Player player,
+                                 final String group) {
         return permPlugin.playerInGroup(player.getUniqueId(), group);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerAddGroup(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerAddGroup(String, OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerAddGroup(String world, String player, String group) {
+    public boolean playerAddGroup(final String world,
+                                  final String player,
+                                  final String group) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setMembership(uuid, group, true);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerAddGroup(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerAddGroup(String, OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerAddGroup(World world, String player, String group) {
+    public boolean playerAddGroup(final World world,
+                                  final String player,
+                                  final String group) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setMembership(uuid, group, true);
@@ -561,8 +714,10 @@ final class VaultPerm extends Permission {
 
     /**
      * Add player to a group.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world String world name
      * @param player to add
@@ -570,39 +725,49 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerAddGroup(String world, OfflinePlayer player, String group) {
+    public boolean playerAddGroup(final String world,
+                                  final OfflinePlayer player,
+                                  final String group) {
         return permPlugin.setMembership(player.getUniqueId(), group, true);
     }
 
     /**
      * Add player to a group.
-     * This will add a player to the group on the current World.  This may return odd results if the permission system
-     * being used on the server does not support world-specific groups, or if the group being added to is a global group.
+     * This will add a player to the group on the current World.  This
+     * may return odd results if the permission system being used on
+     * the server does not support world-specific groups, or if the
+     * group being added to is a global group.
      *
      * @param player Player Object
      * @param group Group name
      * @return Success or Failure
      */
     @Override
-    public boolean playerAddGroup(Player player, String group) {
+    public boolean playerAddGroup(final Player player, final String group) {
         return permPlugin.setMembership(player.getUniqueId(), group, true);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerRemoveGroup(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerRemoveGroup(String, OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerRemoveGroup(String world, String player, String group) {
+    public boolean playerRemoveGroup(final String world,
+                                     final String player,
+                                     final String group) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setMembership(uuid, group, false);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #playerRemoveGroup(String, OfflinePlayer, String)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #playerRemoveGroup(String, OfflinePlayer, String)} instead.
      */
     @Override
-    public boolean playerRemoveGroup(World world, String player, String group) {
+    public boolean playerRemoveGroup(final World world,
+                                     final String player,
+                                     final String group) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return false;
         return permPlugin.setMembership(uuid, group, false);
@@ -610,8 +775,10 @@ final class VaultPerm extends Permission {
 
     /**
      * Remove player from a group.
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.  May return odd values
+     * if the servers registered permission system does not have a
+     * global permission store.
      *
      * @param world World Object
      * @param player to remove
@@ -619,76 +786,96 @@ final class VaultPerm extends Permission {
      * @return Success or Failure
      */
     @Override
-    public boolean playerRemoveGroup(String world, OfflinePlayer player, String group) {
+    public boolean playerRemoveGroup(final String world,
+                                     final OfflinePlayer player,
+                                     final String group) {
         return permPlugin.setMembership(player.getUniqueId(), group, false);
     }
 
     /**
      * Remove player from a group.
-     * This will add a player to the group on the current World.  This may return odd results if the permission system
-     * being used on the server does not support world-specific groups, or if the group being added to is a global group.
+     * This will add a player to the group on the current World.  This
+     * may return odd results if the permission system being used on
+     * the server does not support world-specific groups, or if the
+     * group being added to is a global group.
      *
      * @param player Player Object
      * @param group Group name
      * @return Success or Failure
      */
     @Override
-    public boolean playerRemoveGroup(Player player, String group) {
+    public boolean playerRemoveGroup(final Player player,
+                                     final String group) {
         return permPlugin.setMembership(player.getUniqueId(), group, false);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #getPlayerGroups(String, OfflinePlayer)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #getPlayerGroups(String, OfflinePlayer)} instead.
      */
     @Override
-    public String[] getPlayerGroups(String world, String player) {
+    public String[] getPlayerGroups(final String world,
+                                    final String player) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return new String[0];
         return permPlugin.findPlayerGroups(uuid).toArray(new String[0]);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #getPlayerGroups(String, OfflinePlayer)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #getPlayerGroups(String, OfflinePlayer)} instead.
      */
     @Override
-    public String[] getPlayerGroups(World world, String player) {
+    public String[] getPlayerGroups(final World world,
+                                    final String player) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return new String[0];
         return permPlugin.findPlayerGroups(uuid).toArray(new String[0]);
     }
 
     /**
-     * Gets the list of groups that this player has
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Gets the list of groups that this player has.
+     * Supports NULL value for World if the permission system
+     * registered supports global permissions.
+     * May return odd values if the servers registered permission
+     * system does not have a global permission store.
      *
      * @param world String world name
      * @param player OfflinePlayer
      * @return Array of groups
      */
     @Override
-    public String[] getPlayerGroups(String world, OfflinePlayer player) {
-        return permPlugin.findPlayerGroups(player.getUniqueId()).toArray(new String[0]);
+    public String[] getPlayerGroups(final String world,
+                                    final OfflinePlayer player) {
+        return permPlugin.findPlayerGroups(player.getUniqueId())
+            .toArray(new String[0]);
     }
 
     /**
-     * Returns a list of world-specific groups that this player is currently in. May return unexpected results if
-     * you are looking for global groups, or if the registered permission system does not support world-specific groups.
-     * See {@link #getPlayerGroups(String, OfflinePlayer)} for better control of World-specific or global groups.
+     * Returns a list of world-specific groups that this player is
+     * currently in.
+     * May return unexpected results if you are looking
+     * for global groups, or if the registered permission system does
+     * not support world-specific groups.
+     * See {@link #getPlayerGroups(String, OfflinePlayer)} for better
+     * control of World-specific or global groups.
      *
      * @param player Player Object
      * @return Array of groups
      */
     @Override
-    public String[] getPlayerGroups(Player player) {
-        return permPlugin.findPlayerGroups(player.getUniqueId()).toArray(new String[0]);
+    public String[] getPlayerGroups(final Player player) {
+        return permPlugin.findPlayerGroups(player.getUniqueId())
+            .toArray(new String[0]);
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #getPrimaryGroup(String, OfflinePlayer)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #getPrimaryGroup(String, OfflinePlayer)} instead.
      */
     @Override
-    public String getPrimaryGroup(String world, String player) {
+    public String getPrimaryGroup(final String world,
+                                  final String player) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return permPlugin.getDefaultGroup();
         List<String> groups = permPlugin.findPlayerGroups(uuid);
@@ -706,10 +893,12 @@ final class VaultPerm extends Permission {
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link #getPrimaryGroup(String, OfflinePlayer)} instead.
+     * @deprecated As of VaultAPI 1.4 use {@link
+     * #getPrimaryGroup(String, OfflinePlayer)} instead.
      */
     @Override
-    public String getPrimaryGroup(World world, String player) {
+    public String getPrimaryGroup(final World world,
+                                  final String player) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
         if (uuid == null) return permPlugin.getDefaultGroup();
         List<String> groups = permPlugin.findPlayerGroups(uuid);
@@ -718,38 +907,41 @@ final class VaultPerm extends Permission {
     }
 
     /**
-     * Gets players primary group
-     * Supports NULL value for World if the permission system registered supports global permissions.
-     * But May return odd values if the servers registered permission system does not have a global permission store.
+     * Gets players primary group Supports NULL value for World if the
+     * permission system registered supports global permissions.  May
+     * return odd values if the servers registered permission system
+     * does not have a global permission store.
      *
      * @param world String world name
      * @param player to get from
      * @return Players primary group
      */
     @Override
-    public String getPrimaryGroup(String world, OfflinePlayer player) {
+    public String getPrimaryGroup(final String world,
+                                  final OfflinePlayer player) {
         List<String> groups = permPlugin.findPlayerGroups(player.getUniqueId());
         if (groups.isEmpty()) return permPlugin.getDefaultGroup();
         return groups.get(0);
     }
 
     /**
-     * Get players primary group.
-     * Defaults to the players current world, so may return only world-specific groups.
-     * In most cases {@link #getPrimaryGroup(String, OfflinePlayer)} is preferable.
+     * Get players primary group.  Defaults to the players current
+     * world, so may return only world-specific groups.
+     * In most cases {@link #getPrimaryGroup(String, OfflinePlayer)}
+     * is preferable.
      *
      * @param player Player Object
      * @return Players primary group
      */
     @Override
-    public String getPrimaryGroup(Player player) {
+    public String getPrimaryGroup(final Player player) {
         List<String> groups = permPlugin.findPlayerGroups(player.getUniqueId());
         if (groups.isEmpty()) return permPlugin.getDefaultGroup();
         return groups.get(0);
     }
 
     /**
-     * Returns a list of all known groups
+     * Returns a list of all known groups.
      * @return an Array of String of all groups
      */
     @Override

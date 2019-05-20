@@ -47,20 +47,26 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         private List<SQLMember> members;
         private List<SQLPermission> permissions;
         private SQLVersion version;
-        SQLGroup findGroup(String name) {
-            name = name.toLowerCase();
+        SQLGroup findGroup(final String name) {
             for (SQLGroup group: groups) {
                 if (name.equals(group.getKey())) return group;
             }
             return null;
         }
-        private final HashMap<String, List<String>> deepGroupParents = new HashMap<>();
-        private final HashMap<UUID, HashMap<String, Boolean>> flatPlayerPerms = new HashMap<>();
-        private final HashMap<String, HashMap<String, Boolean>> flatGroupPerms = new HashMap<>();
-        private final HashMap<String, List<UUID>> groupMembers = new HashMap<>();
-        private final HashMap<Set<String>, HashMap<String, Boolean>> deepGroupPerms = new HashMap<>();
-        private final HashMap<String, Integer> groupPrios = new HashMap<>();
-        private final HashMap<UUID, Map<String, Boolean>> deepPlayerPerms = new HashMap<>();
+        private final HashMap<String, List<String>>
+            deepGroupParents = new HashMap<>();
+        private final HashMap<UUID, HashMap<String, Boolean>>
+            flatPlayerPerms = new HashMap<>();
+        private final HashMap<String, HashMap<String, Boolean>>
+            flatGroupPerms = new HashMap<>();
+        private final HashMap<String, List<UUID>>
+            groupMembers = new HashMap<>();
+        private final HashMap<Set<String>, HashMap<String, Boolean>>
+            deepGroupPerms = new HashMap<>();
+        private final HashMap<String, Integer>
+            groupPrios = new HashMap<>();
+        private final HashMap<UUID, Map<String, Boolean>>
+            deepPlayerPerms = new HashMap<>();
     }
 
     @Override
@@ -87,7 +93,8 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         db.createAllTables();
         getServer().getPluginManager().registerEvents(this, this);
         refreshPermissions();
-        if (!vaultEnabled && getServer().getPluginManager().isPluginEnabled("Vault")) {
+        if (!vaultEnabled
+            && getServer().getPluginManager().isPluginEnabled("Vault")) {
             VaultPerm vaultPerm = new VaultPerm(this);
             vaultPerm.register();
         }
@@ -136,9 +143,11 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         newCache.groups = db.find(SQLGroup.class).findList();
         newCache.members = db.find(SQLMember.class).findList();
         newCache.permissions = db.find(SQLPermission.class).findList();
-        newCache.version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
+        newCache.version = db.find(SQLVersion.class).eq("name", "Perm")
+            .findUnique();
         if (newCache.version == null) newCache.version = new SQLVersion("Perm");
-        newCache.deepGroupParents.put(defaultGroup.toLowerCase(), new ArrayList<>());
+        newCache.deepGroupParents.put(defaultGroup,
+                                      new ArrayList<>());
         for (SQLGroup row: newCache.groups) {
             List<String> deepGroupParents = new ArrayList<>();
             newCache.deepGroupParents.put(row.getKey(), deepGroupParents);
@@ -164,10 +173,12 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             if (row.getIsGroup()) {
                 SQLGroup group = newCache.findGroup(row.getEntity());
                 if (group == null) continue;
-                newCache.flatGroupPerms.get(group.getKey()).put(row.getPermission(), row.getValue());
+                newCache.flatGroupPerms.get(group.getKey())
+                    .put(row.getPermission(), row.getValue());
             } else {
                 UUID uuid = row.getUuid();
-                HashMap<String, Boolean> perms = newCache.flatPlayerPerms.get(uuid);
+                HashMap<String, Boolean> perms = newCache.flatPlayerPerms
+                    .get(uuid);
                 if (perms == null) {
                     perms = new HashMap<>();
                     newCache.flatPlayerPerms.put(uuid, perms);
@@ -182,8 +193,11 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        String cmd = args.length == 0 ? null : args[0].toLowerCase();
+    public boolean onCommand(final CommandSender sender,
+                             final Command command,
+                             final String label,
+                             final String[] args) {
+        String cmd = args.length == 0 ? null : args[0];
         if (cmd == null) {
             return false;
         } else if ("reload".equals(cmd) && args.length == 1) {
@@ -192,17 +206,6 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         } else if ("refresh".equals(cmd) && args.length == 1) {
             refreshPermissions();
             sender.sendMessage("Permissions refreshed.");
-        } else if ("migrate".equals(cmd)) {
-            if (!migrationEnabled) {
-                sender.sendMessage("Migration is disabled in the config.");
-                return true;
-            }
-            try {
-                Legacy.migrate(this);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            sender.sendMessage("Migration complete. See console.");
         } else if ("player".equals(cmd) && args.length >= 2) {
             String playerName = args[1];
             UUID playerUuid = GenericEvents.cachedPlayerUuid(playerName);
@@ -211,41 +214,58 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 return true;
             }
             playerName = GenericEvents.cachedPlayerName(playerUuid);
-            String subcmd = args.length >= 3 ? args[2].toLowerCase() : null;
+            String subcmd = args.length >= 3 ? args[2] : null;
             if ("get".equals(subcmd) && args.length == 4) {
                 String perm = args[3];
                 Boolean value = findPlayerPerms(playerUuid).get(perm);
-                sender.sendMessage(String.format("Setting for %s of %s: %s", playerName, perm, value));
-            } else if ("show".equals(subcmd) && (args.length == 3 || args.length == 4)) {
-                String pattern = args.length >= 4 ? args[3].toLowerCase() : null;
+                sender.sendMessage(String.format("Setting for %s of %s: %s",
+                                                 playerName, perm, value));
+            } else if ("show".equals(subcmd)
+                       && (args.length == 3 || args.length == 4)) {
+                String pattern = args.length >= 4
+                    ? args[3]
+                    : null;
                 if (pattern == null) {
-                    sender.sendMessage("Declared permissions of " + playerName + ":");
+                    sender.sendMessage("Declared permissions of "
+                                       + playerName + ":");
                 } else {
-                    sender.sendMessage("Declared permissions of " + playerName + " matching " + pattern + ":");
+                    sender.sendMessage("Declared permissions of "
+                                       + playerName + " matching "
+                                       + pattern + ":");
                 }
                 String entityName = playerUuid.toString();
                 int count = 0;
                 for (SQLPermission permission: cache.permissions) {
                     if (permission.getIsGroup()) continue;
                     if (!entityName.equals(permission.getEntity())) continue;
-                    if (pattern == null || permission.getPermission().contains(pattern)) {
-                        sender.sendMessage("- " + permission.getPermission() + ": " + permission.getValue());
+                    if (pattern == null
+                        || permission.getPermission().contains(pattern)) {
+                        sender.sendMessage("- " + permission.getPermission()
+                                           + ": " + permission.getValue());
                         count += 1;
                     }
                 }
                 sender.sendMessage("Total " + count);
-            } else if ("dump".equals(subcmd) && (args.length == 3 || args.length == 4)) {
-                String pattern = args.length >= 4 ? args[3].toLowerCase() : null;
+            } else if ("dump".equals(subcmd)
+                       && (args.length == 3 || args.length == 4)) {
+                String pattern = args.length >= 4
+                    ? args[3]
+                    : null;
                 if (pattern == null) {
-                    sender.sendMessage("All permissions of " + playerName + ":");
+                    sender.sendMessage("All permissions of "
+                                       + playerName + ":");
                 } else {
-                    sender.sendMessage("All permissions of " + playerName + " matching " + pattern + ":");
+                    sender.sendMessage("All permissions of "
+                                       + playerName + " matching "
+                                       + pattern + ":");
                 }
                 int count = 0;
-                for (Map.Entry<String, Boolean> entry: findPlayerPerms(playerUuid).entrySet()) {
+                for (Map.Entry<String, Boolean> entry
+                         : findPlayerPerms(playerUuid).entrySet()) {
                     String perm = entry.getKey();
                     if (pattern == null || perm.contains(pattern)) {
-                        sender.sendMessage("- " + perm + ": " + entry.getValue());
+                        sender.sendMessage("- " + perm + ": "
+                                           + entry.getValue());
                         count += 1;
                     }
                 }
@@ -257,14 +277,23 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                     sender.sendMessage(playerName + " is not online!");
                     return true;
                 }
-                sender.sendMessage(String.format("%s.hasPermission(%s) = %s", player.getName(), perm, player.hasPermission(perm)));
+                sender.sendMessage(String
+                                   .format("%s.hasPermission(%s) = %s",
+                                           player.getName(),
+                                           perm,
+                                           player.hasPermission(perm)));
             } else if ("groups".equals(subcmd) && args.length == 3) {
-                sender.sendMessage(playerName + " is in groups: " + findPlayerGroups(playerUuid));
-            } else if ("set".equals(subcmd) && (args.length == 4 || args.length == 5)) {
+                sender.sendMessage(playerName + " is in groups: "
+                                   + findPlayerGroups(playerUuid));
+            } else if ("set".equals(subcmd)
+                       && (args.length == 4 || args.length == 5)) {
                 String perm = args[3];
-                boolean value = args.length >= 5 ? Boolean.parseBoolean(args[4]) : true;
+                boolean value = args.length >= 5
+                    ? Boolean.parseBoolean(args[4])
+                    : true;
                 setPlayerPerm(playerUuid, perm, value);
-                sender.sendMessage(perm + " set to " + value + " for " + playerName);
+                sender.sendMessage(perm + " set to " + value
+                                   + " for " + playerName);
             } else if ("unset".equals(subcmd) && args.length == 4) {
                 String perm = args[3];
                 if (setPlayerPerm(playerUuid, perm, null)) {
@@ -279,16 +308,20 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                     return true;
                 }
                 if (setMembership(playerUuid, groupName, true)) {
-                    sender.sendMessage(playerName + " added to group " + groupName);
+                    sender.sendMessage(playerName + " added to group "
+                                       + groupName);
                 } else {
-                    sender.sendMessage(playerName + " already in group " + groupName);
+                    sender.sendMessage(playerName + " already in group "
+                                       + groupName);
                 }
             } else if ("removegroup".equals(subcmd) && args.length == 4) {
                 String groupName = args[3];
                 if (setMembership(playerUuid, groupName, false)) {
-                    sender.sendMessage(playerName + " removed from group " + groupName);
+                    sender.sendMessage(playerName + " removed from group "
+                                       + groupName);
                 } else {
-                    sender.sendMessage(playerName + " is not in group " + groupName);
+                    sender.sendMessage(playerName + " is not in group "
+                                       + groupName);
                 }
             } else if ("setgroup".equals(subcmd) && args.length == 4) {
                 String groupName = args[3];
@@ -297,36 +330,48 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                     return true;
                 }
                 List<String> groups = findPlayerGroups(playerUuid);
-                if (groups.size() == 1 && groups.get(0).equals(groupName.toLowerCase())) {
-                    sender.sendMessage(playerName + " already in group " + groupName);
+                if (groups.size() == 1
+                    && groups.get(0).equals(groupName)) {
+                    sender.sendMessage(playerName + " already in group "
+                                       + groupName);
                     return true;
                 }
                 db.find(SQLMember.class)
                     .eq("member", playerUuid)
                     .delete();
-                db.insert(new SQLMember(playerUuid, groupName.toLowerCase()));
+                db.insert(new SQLMember(playerUuid, groupName));
                 updateVersion();
                 refreshPermissions();
                 sender.sendMessage(playerName + " now in group " + groupName);
                 return true;
             } else {
                 sender.sendMessage("Usage");
-                sender.sendMessage("/perm player <name> get <perm> - Get stored permission value");
-                sender.sendMessage("/perm player <name> show [pattern] - List assigned permissions");
-                sender.sendMessage("/perm player <name> dump [pattern] - List all permissions");
-                sender.sendMessage("/perm player <name> has <perm> - Bukkit hasPermission check");
-                sender.sendMessage("/perm player <name> set <perm> [value] - Assign permission");
-                sender.sendMessage("/perm player <name> unset <perm> - Unassign permission");
-                sender.sendMessage("/perm player <name> addgroup <group> - Add player to group");
-                sender.sendMessage("/perm player <name> removegroup <group> - Remove player from group");
-                sender.sendMessage("/perm player <name> setgroup <group> - Set sole player group");
+                sender.sendMessage("/perm player <name> get <perm>"
+                                   + " - Get stored permission value");
+                sender.sendMessage("/perm player <name> show [pattern]"
+                                   + " - List assigned permissions");
+                sender.sendMessage("/perm player <name> dump [pattern]"
+                                   + " - List all permissions");
+                sender.sendMessage("/perm player <name> has <perm>"
+                                   + " - Bukkit hasPermission check");
+                sender.sendMessage("/perm player <name> set <perm> [value]"
+                                   + " - Assign permission");
+                sender.sendMessage("/perm player <name> unset <perm>"
+                                   + " - Unassign permission");
+                sender.sendMessage("/perm player <name> addgroup <group>"
+                                   + " - Add player to group");
+                sender.sendMessage("/perm player <name> removegroup <group>"
+                                   + " - Remove player from group");
+                sender.sendMessage("/perm player <name> setgroup <group>"
+                                   + " - Set sole player group");
             }
         } else if ("group".equals(cmd) && args.length >= 2) {
             String groupName = args[1];
             SQLGroup group = cache.findGroup(groupName);
             if (group == null) {
-                if (args.length == 3 && args[2].equalsIgnoreCase("create")) {
-                    group = new SQLGroup(groupName.toLowerCase(), 0, groupName, null);
+                if (args.length == 3 && args[2].equals("create")) {
+                    group = new SQLGroup(groupName,
+                                         0, groupName, null);
                     db.save(group);
                     cache.groups.add(group);
                     sender.sendMessage("Group created: " + groupName);
@@ -336,26 +381,38 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 return true;
             }
             groupName = group.getKey();
-            String subcmd = args.length >= 3 ? args[2].toLowerCase() : null;
+            String subcmd = args.length >= 3
+                ? args[2]
+                : null;
             if ("info".equals(subcmd) && args.length == 3) {
                 sender.sendMessage(ChatColor.YELLOW + "Group Info");
-                sender.sendMessage(ChatColor.GRAY + "Key: " + ChatColor.WHITE + group.getKey());
-                sender.sendMessage(ChatColor.GRAY + "Display: " + ChatColor.WHITE + group.getDisplayName());
-                sender.sendMessage(ChatColor.GRAY + "Members: " + ChatColor.WHITE + findGroupMembers(group.getKey()).size());
-                sender.sendMessage(ChatColor.GRAY + "Prio: " + ChatColor.WHITE + group.getPriority());
+                sender.sendMessage(ChatColor.GRAY + "Key: "
+                                   + ChatColor.WHITE + group.getKey());
+                sender.sendMessage(ChatColor.GRAY + "Display: "
+                                   + ChatColor.WHITE + group.getDisplayName());
+                sender.sendMessage(ChatColor.GRAY + "Members: "
+                                   + ChatColor.WHITE
+                                   + findGroupMembers(group.getKey()).size());
+                sender.sendMessage(ChatColor.GRAY + "Prio: "
+                                   + ChatColor.WHITE + group.getPriority());
                 StringBuilder sb = new StringBuilder("");
                 String warnAboutParent = null;
                 String warnAboutPrio = null;
                 SQLGroup parentGroup = group;
                 int prio = parentGroup.getPriority();
                 while (parentGroup != null) {
-                    sb.append(" ").append(ChatColor.WHITE).append(parentGroup.getKey()).append(ChatColor.GRAY).append("(").append(parentGroup.getPriority() + ")");
+                    sb.append(" ").append(ChatColor.WHITE)
+                        .append(parentGroup.getKey())
+                        .append(ChatColor.GRAY).append("(")
+                        .append(parentGroup.getPriority() + ")");
                     if (parentGroup.getParent() != null) {
                         parentGroup = cache.findGroup(parentGroup.getParent());
                         if (parentGroup == null) {
                             warnAboutParent = parentGroup.getKey();
                         } else {
-                            if (prio <= parentGroup.getPriority()) warnAboutPrio = parentGroup.getKey();
+                            if (prio <= parentGroup.getPriority()) {
+                                warnAboutPrio = parentGroup.getKey();
+                            }
                             prio = parentGroup.getPriority();
                         }
                     } else {
@@ -363,42 +420,72 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                         break;
                     }
                 }
-                sender.sendMessage(ChatColor.GRAY + "Inherit:" + ChatColor.WHITE + sb.toString());
-                if (warnAboutParent != null) sender.sendMessage(ChatColor.RED + "Warning: " + warnAboutParent + " has missing parent.");
-                if (warnAboutPrio != null) sender.sendMessage(ChatColor.RED + "Warning: " + warnAboutPrio + " has priority higher than or equal to at least one parent.");
+                sender.sendMessage(ChatColor.GRAY + "Inherit:"
+                                   + ChatColor.WHITE + sb.toString());
+                if (warnAboutParent != null) {
+                    sender.sendMessage(ChatColor.RED + "Warning: "
+                                       + warnAboutParent
+                                       + " has missing parent.");
+                }
+                if (warnAboutPrio != null) {
+                    sender.sendMessage(ChatColor.RED + "Warning: "
+                                       + warnAboutPrio
+                                       + " has priority higher than"
+                                       + " or equal to at least one parent.");
+                }
             } else if ("get".equals(subcmd) && args.length == 4) {
                 String perm = args[3];
                 Boolean value = findGroupPerms(groupName).get(perm);
-                sender.sendMessage(String.format("Setting for group %s of %s: %s", groupName, perm, value));
-            } else if ("show".equals(subcmd) && (args.length == 3 || args.length == 4)) {
-                String pattern = args.length >= 4 ? args[3].toLowerCase() : null;
+                sender.sendMessage(String
+                                   .format("Setting for group %s of %s: %s",
+                                           groupName,
+                                           perm,
+                                           value));
+            } else if ("show".equals(subcmd)
+                       && (args.length == 3 || args.length == 4)) {
+                String pattern = args.length >= 4
+                    ? args[3]
+                    : null;
                 if (pattern == null) {
-                    sender.sendMessage("Declared permissions of group " + groupName + ":");
+                    sender.sendMessage("Declared permissions of group "
+                                       + groupName + ":");
                 } else {
-                    sender.sendMessage("Declared permissions of group " + groupName + " matching " + pattern + ":");
+                    sender.sendMessage("Declared permissions of group "
+                                       + groupName + " matching "
+                                       + pattern + ":");
                 }
                 int count = 0;
                 for (SQLPermission permission: cache.permissions) {
                     if (!permission.getIsGroup()) continue;
                     if (!groupName.equals(permission.getEntity())) continue;
-                    if (pattern == null || permission.getPermission().contains(pattern)) {
-                        sender.sendMessage("- " + permission.getPermission() + ": " + permission.getValue());
+                    if (pattern == null
+                        || permission.getPermission().contains(pattern)) {
+                        sender.sendMessage("- " + permission.getPermission()
+                                           + ": " + permission.getValue());
                         count += 1;
                     }
                 }
                 sender.sendMessage("Total " + count);
-            } else if ("dump".equals(subcmd) && (args.length == 3 || args.length == 4)) {
-                String pattern = args.length >= 4 ? args[3].toLowerCase() : null;
+            } else if ("dump".equals(subcmd)
+                       && (args.length == 3 || args.length == 4)) {
+                String pattern = args.length >= 4
+                    ? args[3]
+                    : null;
                 if (pattern == null) {
-                    sender.sendMessage("All permissions of group " + groupName + ":");
+                    sender.sendMessage("All permissions of group "
+                                       + groupName + ":");
                 } else {
-                    sender.sendMessage("All permissions of group " + groupName + " matching " + pattern + ":");
+                    sender.sendMessage("All permissions of group "
+                                       + groupName + " matching "
+                                       + pattern + ":");
                 }
                 int count = 0;
-                for (Map.Entry<String, Boolean> entry: findGroupPerms(groupName).entrySet()) {
+                for (Map.Entry<String, Boolean> entry
+                         : findGroupPerms(groupName).entrySet()) {
                     String perm = entry.getKey();
                     if (pattern == null || perm.contains(pattern)) {
-                        sender.sendMessage("- " + perm + ": " + entry.getValue());
+                        sender.sendMessage("- " + perm + ": "
+                                           + entry.getValue());
                         count += 1;
                     }
                 }
@@ -407,21 +494,27 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 sender.sendMessage("Members of group " + groupName + ":");
                 int count = 0;
                 for (UUID uuid: findGroupMembers(groupName)) {
-                    sender.sendMessage("- " + GenericEvents.cachedPlayerName(uuid));
+                    sender.sendMessage("- "
+                                       + GenericEvents.cachedPlayerName(uuid));
                     count += 1;
                 }
                 sender.sendMessage("Total " + count);
-            } else if ("set".equals(subcmd) && (args.length == 4 || args.length == 5)) {
+            } else if ("set".equals(subcmd)
+                       && (args.length == 4 || args.length == 5)) {
                 String perm = args[3];
-                boolean value = args.length >= 5 ? Boolean.parseBoolean(args[4]) : true;
+                boolean value = args.length >= 5
+                    ? Boolean.parseBoolean(args[4])
+                    : true;
                 setGroupPerm(groupName, perm, value);
-                sender.sendMessage(perm + " set to " + value + " for group " + groupName);
+                sender.sendMessage(perm + " set to " + value
+                                   + " for group " + groupName);
             } else if ("unset".equals(subcmd) && args.length == 4) {
                 String perm = args[3];
                 if (setGroupPerm(groupName, perm, null)) {
                     sender.sendMessage(perm + " unset for group " + groupName);
                 } else {
-                    sender.sendMessage("Group " + groupName + " does not set " + perm);
+                    sender.sendMessage("Group " + groupName
+                                       + " does not set " + perm);
                 }
             } else if ("add".equals(subcmd) && args.length == 4) {
                 String playerName = args[3];
@@ -432,9 +525,11 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 }
                 playerName = GenericEvents.cachedPlayerName(playerUuid);
                 if (setMembership(playerUuid, groupName, true)) {
-                    sender.sendMessage(playerName + " added to group " + groupName);
+                    sender.sendMessage(playerName + " added to group "
+                                       + groupName);
                 } else {
-                    sender.sendMessage(playerName + " already in group " + groupName);
+                    sender.sendMessage(playerName + " already in group "
+                                       + groupName);
                 }
             } else if ("remove".equals(subcmd) && args.length == 4) {
                 String playerName = args[3];
@@ -445,9 +540,11 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 }
                 playerName = GenericEvents.cachedPlayerName(playerUuid);
                 if (setMembership(playerUuid, groupName, false)) {
-                    sender.sendMessage(playerName + " removed from group " + groupName);
+                    sender.sendMessage(playerName + " removed from group "
+                                       + groupName);
                 } else {
-                    sender.sendMessage(playerName + " is not in group " + groupName);
+                    sender.sendMessage(playerName + " is not in group "
+                                       + groupName);
                 }
             } else if ("setpriority".equals(subcmd) && args.length == 4) {
                 int prio;
@@ -459,7 +556,8 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 }
                 group.setPriority(prio);
                 db.save(group);
-                sender.sendMessage("Set priority of group " + groupName + " to " + prio);
+                sender.sendMessage("Set priority of group " + groupName
+                                   + " to " + prio);
                 updateVersion();
                 refreshPermissions();
             } else if ("setparent".equals(subcmd) && args.length == 4) {
@@ -472,24 +570,37 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 parentName = parentGroup.getKey();
                 group.setParent(parentName);
                 db.save(group);
-                sender.sendMessage("Set parent of group " + groupName + " to " + parentName);
+                sender.sendMessage("Set parent of group " + groupName
+                                   + " to " + parentName);
                 updateVersion();
                 refreshPermissions();
             } else {
                 sender.sendMessage("Usage");
-                sender.sendMessage("/perm group <name> info - List some information");
-                sender.sendMessage("/perm group <name> get <perm> - Get stored permission value");
-                sender.sendMessage("/perm group <name> show [pattern] - List assigned permissions");
-                sender.sendMessage("/perm group <name> dump [pattern] - List all permissions");
-                sender.sendMessage("/perm group <name> set <perm> [value] - Assign permission");
-                sender.sendMessage("/perm group <name> unset <perm> - Unassign permission");
-                sender.sendMessage("/perm group <name> add <player> - Add player to group");
-                sender.sendMessage("/perm group <name> remove <player> - Remove player from group");
-                sender.sendMessage("/perm group <name> setpriority <prio> - Set group priority");
-                sender.sendMessage("/perm group <name> setparent <group> - Set parent group");
+                sender.sendMessage("/perm group <name> info"
+                                   + " - List some information");
+                sender.sendMessage("/perm group <name> get <perm>"
+                                   + " - Get stored permission value");
+                sender.sendMessage("/perm group <name> show [pattern]"
+                                   + " - List assigned permissions");
+                sender.sendMessage("/perm group <name> dump [pattern]"
+                                   + " - List all permissions");
+                sender.sendMessage("/perm group <name> set <perm> [value]"
+                                   + " - Assign permission");
+                sender.sendMessage("/perm group <name> unset <perm>"
+                                   + " - Unassign permission");
+                sender.sendMessage("/perm group <name> add <player>"
+                                   + " - Add player to group");
+                sender.sendMessage("/perm group <name> remove <player>"
+                                   + " - Remove player from group");
+                sender.sendMessage("/perm group <name> setpriority <prio>"
+                                   + " - Set group priority");
+                sender.sendMessage("/perm group <name> setparent <group>"
+                                   + " - Set parent group");
             }
         } else if ("list".equals(cmd)) {
-            String subcmd = args.length >= 2 ? args[1].toLowerCase() : null;
+            String subcmd = args.length >= 2
+                ? args[1]
+                : null;
             if ("groups".equals(subcmd)) {
                 sender.sendMessage("Groups: " + getGroups());
             } else if ("playerperms".equals(subcmd)) {
@@ -497,15 +608,20 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 int count = 0;
                 for (SQLPermission permission: cache.permissions) {
                     if (permission.getIsGroup()) continue;
-                    String playerName = GenericEvents.cachedPlayerName(UUID.fromString(permission.getEntity()));
-                    sender.sendMessage(playerName + ": " + permission.getPermission() + ": " + permission.getValue());
+                    final UUID uuid = UUID.fromString(permission.getEntity());
+                    String playerName = GenericEvents.cachedPlayerName(uuid);
+                    sender.sendMessage(playerName + ": "
+                                       + permission.getPermission()
+                                       + ": " + permission.getValue());
                     count += 1;
                 }
                 sender.sendMessage("Total " + count);
             } else {
                 sender.sendMessage("Usage");
-                sender.sendMessage("/perm list groups - List groups");
-                sender.sendMessage("/perm list playerperms - List assigned player permissions");
+                sender.sendMessage("/perm list groups"
+                                   + " - List groups");
+                sender.sendMessage("/perm list playerperms"
+                                   + " - List assigned player permissions");
             }
         } else {
             return false;
@@ -514,32 +630,62 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(final CommandSender sender,
+                                      final Command command,
+                                      final String alias,
+                                      final String[] args) {
         if (args.length == 0) return null;
         String pat = args[args.length - 1];
         if (args.length == 1) {
-            return Arrays.asList("player", "group", "list", "reload", "refresh").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("list")) {
-            return Arrays.asList("groups", "playerperms").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
-        } else if (args.length == 2 && args[0].equalsIgnoreCase("group")) {
-            return getGroups().stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("player")) {
-            return Arrays.asList("get", "show", "dump", "has", "set", "unset", "addgroup", "removegroup").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("group")) {
-            return Arrays.asList("info", "get", "show", "dump", "set", "unset", "add", "remove", "create", "setpriority", "setparent").stream().filter(i -> i.startsWith(pat)).sorted().collect(Collectors.toList());
+            return Arrays.asList("player", "group", "list",
+                                 "reload", "refresh")
+                .stream()
+                .filter(i -> i.startsWith(pat))
+                .sorted()
+                .collect(Collectors.toList());
+        } else if (args.length == 2 && args[0].equals("list")) {
+            return Arrays.asList("groups", "playerperms")
+                .stream()
+                .filter(i -> i.startsWith(pat))
+                .sorted()
+                .collect(Collectors.toList());
+        } else if (args.length == 2 && args[0].equals("group")) {
+            return getGroups()
+                .stream()
+                .filter(i -> i.startsWith(pat))
+                .sorted()
+                .collect(Collectors.toList());
+        } else if (args.length == 3 && args[0].equals("player")) {
+            return Arrays.asList("get", "show", "dump", "has",
+                                 "set", "unset", "addgroup", "removegroup")
+                .stream()
+                .filter(i -> i.startsWith(pat))
+                .sorted()
+                .collect(Collectors.toList());
+        } else if (args.length == 3 && args[0].equals("group")) {
+            return Arrays.asList("info", "get", "show", "dump",
+                                 "set", "unset", "add", "remove",
+                                 "create", "setpriority", "setparent")
+                .stream()
+                .filter(i -> i.startsWith(pat))
+                .sorted()
+                .collect(Collectors.toList());
         }
         return null;
     }
 
     void testVersion() {
-        SQLVersion version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
-        if (version != null && !version.getVersion().equals(cache.version.getVersion())) {
+        SQLVersion version = db.find(SQLVersion.class)
+            .eq("name", "Perm")
+            .findUnique();
+        if (version != null
+            && !version.getVersion().equals(cache.version.getVersion())) {
             getLogger().info("Refreshing permissions from database");
             refreshPermissions();
         }
     }
 
-    Map<String, Boolean> findPlayerPerms(UUID uuid) {
+    Map<String, Boolean> findPlayerPerms(final UUID uuid) {
         Map<String, Boolean> perms = cache.deepPlayerPerms.get(uuid);
         if (perms != null) return perms;
         Set<String> assignedGroups = new HashSet<>();
@@ -549,7 +695,8 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             }
         }
         if (assignedGroups.isEmpty()) assignedGroups.add(defaultGroup);
-        HashMap<String, Boolean> deepGroupPerms = cache.deepGroupPerms.get(assignedGroups);
+        HashMap<String, Boolean> deepGroupPerms =
+            cache.deepGroupPerms.get(assignedGroups);
         if (deepGroupPerms == null) {
             deepGroupPerms = new HashMap<>();
             List<String> groupList = new ArrayList<>();
@@ -557,23 +704,28 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 deepGroupPerms.put("rank." + key, true);
                 groupList.addAll(cache.deepGroupParents.get(key));
             }
-            for (String key: groupList) deepGroupPerms.put("group." + key, true);
-            Collections.sort(groupList, (a, b) -> Integer.compare(cache.groupPrios.get(a), cache.groupPrios.get(b)));
+            for (String key : groupList) {
+                deepGroupPerms.put("group." + key, true);
+            }
+            Collections.sort(groupList, (a, b) ->
+                             Integer.compare(cache.groupPrios.get(a),
+                                             cache.groupPrios.get(b)));
             for (String key: groupList) {
                 deepGroupPerms.putAll(cache.flatGroupPerms.get(key));
             }
             cache.deepGroupPerms.put(assignedGroups, deepGroupPerms);
         }
         perms = new HashMap<>(deepGroupPerms);
-        HashMap<String, Boolean> flatPlayerPerms = cache.flatPlayerPerms.get(uuid);
+        HashMap<String, Boolean> flatPlayerPerms =
+            cache.flatPlayerPerms.get(uuid);
         if (flatPlayerPerms != null) perms.putAll(flatPlayerPerms);
         cache.deepPlayerPerms.put(uuid, perms);
         return perms;
     }
 
-    Map<String, Boolean> findGroupPerms(String groupName) {
+    Map<String, Boolean> findGroupPerms(final String groupName) {
         final Map<String, Boolean> perms = new HashMap<>();
-        SQLGroup group = cache.findGroup(groupName.toLowerCase());
+        SQLGroup group = cache.findGroup(groupName);
         if (group == null) return perms;
         Map<String, Integer> groups = new HashMap<>();
         while (group != null && !groups.containsKey(group.getKey())) {
@@ -590,13 +742,17 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 if (groups.containsKey(perm.getEntity())) {
                     Boolean oldPerm = perms.get(perm.getPermission());
                     if (oldPerm == null) {
-                        perms.put(perm.getPermission(), perm.getValue());
-                        prios.put(perm.getPermission(), groups.get(perm.getEntity()));
+                        perms.put(perm.getPermission(),
+                                  perm.getValue());
+                        prios.put(perm.getPermission(),
+                                  groups.get(perm.getEntity()));
                     } else {
                         Integer oldPrio = prios.get(perm.getPermission());
                         if (oldPrio < groups.get(perm.getEntity())) {
-                            perms.put(perm.getPermission(), perm.getValue());
-                            prios.put(perm.getPermission(), groups.get(perm.getEntity()));
+                            perms.put(perm.getPermission(),
+                                      perm.getValue());
+                            prios.put(perm.getPermission(),
+                                      groups.get(perm.getEntity()));
                         }
                     }
                 }
@@ -605,7 +761,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         return perms;
     }
 
-    void resetPlayerPerms(Player player) {
+    void resetPlayerPerms(final Player player) {
         for (PermissionAttachmentInfo info: player.getEffectivePermissions()) {
             PermissionAttachment attach = info.getAttachment();
             if (attach != null && attach.getPlugin().equals(this)) {
@@ -615,30 +771,35 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    void setupPlayerPerms(Player player) {
+    void setupPlayerPerms(final Player player) {
         Map<String, Boolean> perms = findPlayerPerms(player.getUniqueId());
         // This is a little trick I learned from zPermissions.  Do not
         // add an attachment as adding permissions to it is slow.
         // Instead, create a parent permission for the player
         // containing all their effective permissions as children.
         String motherPerm = "Perm-" + player.getUniqueId();
-        Permission permission = getServer().getPluginManager().getPermission(motherPerm);
+        Permission permission = getServer().getPluginManager()
+            .getPermission(motherPerm);
         if (permission == null) {
-            permission = new Permission(motherPerm, PermissionDefault.FALSE, perms);
+            permission = new Permission(motherPerm,
+                                        PermissionDefault.FALSE,
+                                        perms);
             getServer().getPluginManager().addPermission(permission);
         } else {
             permission.getChildren().clear();
             permission.getChildren().putAll(perms);
         }
-        if (!player.isPermissionSet(motherPerm) || !player.hasPermission(motherPerm)) {
-            PermissionAttachment attach = player.addAttachment(this, motherPerm, true);
+        if (!player.isPermissionSet(motherPerm)
+            || !player.hasPermission(motherPerm)) {
+            PermissionAttachment attach =
+                player.addAttachment(this, motherPerm, true);
         } else {
             permission.recalculatePermissibles();
         }
     }
 
     @EventHandler
-    public void onPluginEnable(PluginEnableEvent event) {
+    public void onPluginEnable(final PluginEnableEvent event) {
         if (vaultEnabled) return;
         if (!event.getPlugin().getName().equals("Vault")) return;
         VaultPerm vaultPerm = new VaultPerm(this);
@@ -646,33 +807,34 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
-    public void onPlayerLogin(PlayerLoginEvent event) {
+    public void onPlayerLogin(final PlayerLoginEvent event) {
         setupPlayerPerms(event.getPlayer());
     }
 
     @EventHandler
-    public void onPlayerHasPermission(PlayerHasPermissionEvent event) {
-        event.setPermitted(playerHasPerm(event.getPlayerId(), event.getPermission()));
+    public void onPlayerHasPermission(final PlayerHasPermissionEvent event) {
+        event.setPermitted(playerHasPerm(event.getPlayerId(),
+                                         event.getPermission()));
     }
 
-    public boolean playerHasPerm(UUID uuid, String perm) {
-        perm = perm.toLowerCase();
+    public boolean playerHasPerm(final UUID uuid,
+                                 final String perm) {
         Map<String, Boolean> perms = findPlayerPerms(uuid);
         Boolean result = perms.get(perm);
         if (result != null) return result;
         return false;
     }
 
-    public boolean groupHasPerm(String name, String perm) {
-        perm = perm.toLowerCase();
+    public boolean groupHasPerm(final String name,
+                                final String perm) {
         Map<String, Boolean> perms = findGroupPerms(name);
         Boolean result = perms.get(perm);
         if (result != null) return result;
         return false;
     }
 
-    public boolean playerInGroup(UUID uuid, String groupName) {
-        groupName = groupName.toLowerCase();
+    public boolean playerInGroup(final UUID uuid,
+                                 final String groupName) {
         for (SQLMember mem: cache.members) {
             if (!uuid.equals(mem.getMember())) continue;
             if (groupName.equals(mem.getGroup())) return true;
@@ -685,7 +847,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         return false;
     }
 
-    public List<String> findPlayerGroups(UUID uuid) {
+    public List<String> findPlayerGroups(final UUID uuid) {
         List<String> result = new ArrayList<>();
         for (SQLMember mem: cache.members) {
             if (!uuid.equals(mem.getMember())) continue;
@@ -695,8 +857,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         return result;
     }
 
-    public List<UUID> findGroupMembers(String groupName) {
-        groupName = groupName.toLowerCase();
+    public List<UUID> findGroupMembers(final String groupName) {
         List<UUID> result = new ArrayList<>();
         for (SQLMember mem: cache.members) {
             if (!groupName.equals(mem.getGroup())) continue;
@@ -705,9 +866,14 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         return result;
     }
 
-    public boolean setPlayerPerm(UUID uuid, String perm, Boolean value) {
-        perm = perm.toLowerCase();
-        SQLPermission row = db.find(SQLPermission.class).eq("entity", uuid.toString()).eq("isGroup", false).eq("permission", perm).findUnique();
+    public boolean setPlayerPerm(final UUID uuid,
+                                 final String perm,
+                                 final Boolean value) {
+        SQLPermission row = db.find(SQLPermission.class)
+            .eq("entity", uuid.toString())
+            .eq("isGroup", false)
+            .eq("permission", perm)
+            .findUnique();
         if (row == null && value == null) {
             return false;
         } else if (value == null) {
@@ -725,10 +891,14 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         return true;
     }
 
-    public boolean setGroupPerm(String group, String perm, Boolean value) {
-        perm = perm.toLowerCase();
-        group = group.toLowerCase();
-        SQLPermission row = db.find(SQLPermission.class).eq("entity", group).eq("isGroup", true).eq("permission", perm).findUnique();
+    public boolean setGroupPerm(final String group,
+                                final String perm,
+                                final Boolean value) {
+        SQLPermission row = db.find(SQLPermission.class)
+            .eq("entity", group)
+            .eq("isGroup", true)
+            .eq("permission", perm)
+            .findUnique();
         if (row == null && value == null) {
             return false;
         } else if (value == null) {
@@ -746,9 +916,13 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         return true;
     }
 
-    public boolean setMembership(UUID uuid, String group, boolean value) {
-        group = group.toLowerCase();
-        SQLMember row = db.find(SQLMember.class).eq("member", uuid).eq("group", group).findUnique();
+    public boolean setMembership(final UUID uuid,
+                                 final String group,
+                                 final boolean value) {
+        SQLMember row = db.find(SQLMember.class)
+            .eq("member", uuid)
+            .eq("group", group)
+            .findUnique();
         if (value && row != null) {
             return false;
         } else if (!value && row == null) {
