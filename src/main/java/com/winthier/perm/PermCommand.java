@@ -640,8 +640,9 @@ public final class PermCommand implements TabExecutor {
             }
             if (args.length == 3) {
                 return starts(arg,
-                              Stream.of("info", "get", "show", "dump",
-                                        "set", "unset", "add", "remove",
+                              Stream.of("info", "show", "dump",
+                                        "get", "set", "unset",
+                                        "members", "add", "remove",
                                         "create", "setpriority",
                                         "setparent", "resetparent"));
             }
