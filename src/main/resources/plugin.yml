@@ -5,8 +5,8 @@ version: 0.1
 api-version: 1.13
 website: http://cavetale.com
 main: com.winthier.perm.PermPlugin
-depend: [ SQL, GenericEvents ]
-softdepend: [ Vault ]
+depend: [SQL, GenericEvents]
+softdepend: [Vault]
 commands:
   perm:
     description: Admin command

@@ -23,6 +23,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
@@ -53,18 +54,27 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             }
             return null;
         }
+        // Map groups to list of parent groups.
         private final HashMap<String, List<String>>
             deepGroupParents = new HashMap<>();
+        // Map UUID to assigned perms.
         private final HashMap<UUID, HashMap<String, Boolean>>
             flatPlayerPerms = new HashMap<>();
+        // Map group key to assigned perms.
         private final HashMap<String, HashMap<String, Boolean>>
             flatGroupPerms = new HashMap<>();
+        // Map group key to list of members.  Without inheritance!
         private final HashMap<String, List<UUID>>
             groupMembers = new HashMap<>();
+        // Map set of group id to permissions.
         private final HashMap<Set<String>, HashMap<String, Boolean>>
             deepGroupPerms = new HashMap<>();
+        // Map group id to priority.
         private final HashMap<String, Integer>
             groupPrios = new HashMap<>();
+
+        // Map UUID to permissions.  This is populated lazily and may
+        // be flushed any time.
         private final HashMap<UUID, Map<String, Boolean>>
             deepPlayerPerms = new HashMap<>();
     }
@@ -148,7 +158,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
         if (newCache.version == null) newCache.version = new SQLVersion("Perm");
         newCache.deepGroupParents.put(defaultGroup,
                                       new ArrayList<>());
-        for (SQLGroup row: newCache.groups) {
+        for (SQLGroup row : newCache.groups) {
             List<String> deepGroupParents = new ArrayList<>();
             newCache.deepGroupParents.put(row.getKey(), deepGroupParents);
             SQLGroup currentRow = row;
@@ -164,12 +174,12 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             newCache.groupPrios.put(row.getKey(), row.getPriority());
             newCache.flatGroupPerms.put(row.getKey(), new HashMap<>());
         }
-        for (SQLMember row: newCache.members) {
+        for (SQLMember row : newCache.members) {
             List<UUID> list = newCache.groupMembers.get(row.getGroup());
             if (list == null) continue;
             list.add(row.getMember());
         }
-        for (SQLPermission row: newCache.permissions) {
+        for (SQLPermission row : newCache.permissions) {
             if (row.getIsGroup()) {
                 SQLGroup group = newCache.findGroup(row.getEntity());
                 if (group == null) continue;
@@ -187,7 +197,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             }
         }
         this.cache = newCache;
-        for (Player player: getServer().getOnlinePlayers()) {
+        for (Player player : getServer().getOnlinePlayers()) {
             setupPlayerPerms(player);
         }
     }
@@ -370,7 +380,7 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             SQLGroup group = cache.findGroup(groupName);
             if (group == null) {
                 if (args.length == 3 && args[2].equals("create")) {
-                    group = new SQLGroup(groupName,
+                    group = new SQLGroup(groupName.toLowerCase(),
                                          0, groupName, null);
                     db.save(group);
                     cache.groups.add(group);
@@ -650,9 +660,9 @@ public final class PermPlugin extends JavaPlugin implements Listener {
                 .sorted()
                 .collect(Collectors.toList());
         } else if (args.length == 2 && args[0].equals("group")) {
-            return getGroups()
-                .stream()
-                .filter(i -> i.startsWith(pat))
+            return cache.groups.stream()
+                .map(SQLGroup::getKey)
+                .filter(s -> s.startsWith(pat))
                 .sorted()
                 .collect(Collectors.toList());
         } else if (args.length == 3 && args[0].equals("player")) {
@@ -766,8 +776,10 @@ public final class PermPlugin extends JavaPlugin implements Listener {
             PermissionAttachment attach = info.getAttachment();
             if (attach != null && attach.getPlugin().equals(this)) {
                 attach.remove();
-                return;
             }
+            final UUID uuid = player.getUniqueId();
+            final String motherPerm = "Perm-" + player.getUniqueId();
+            getServer().getPluginManager().removePermission(motherPerm);
         }
     }
 
@@ -809,6 +821,12 @@ public final class PermPlugin extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerLogin(final PlayerLoginEvent event) {
         setupPlayerPerms(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerQuit(final PlayerQuitEvent event) {
+        resetPlayerPerms(event.getPlayer());
+        cache.deepPlayerPerms.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
