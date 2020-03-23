@@ -405,10 +405,14 @@ public final class PermCommand implements TabExecutor {
                     suggest(cb, "/perm player " + name + " ");
                     cb.append(" ").reset();
                     cb.append("[-]").color(ChatColor.RED);
-                    suggest(cb, "/perm player " + name + " removegroup " + group.getKey());
+                    suggest(cb, "/perm player " + name + " removegroup "
+                            + group.getKey());
                     cb.append(" ").reset();
                     cb.append("[+]").color(ChatColor.BLUE);
                     suggest(cb, "/perm player " + name + " addgroup ");
+                    cb.append("[~]").color(ChatColor.GOLD);
+                    suggest(cb, "/perm player " + name + " replacegroup "
+                            + group.getKey() + " ");
                     player.spigot().sendMessage(cb.create());
                 } else {
                     sender.sendMessage("- " + name);
