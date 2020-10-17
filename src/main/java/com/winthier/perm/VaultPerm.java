@@ -250,18 +250,6 @@ final class VaultPerm extends Permission {
     }
 
     /**
-     * @deprecated As of VaultAPI 1.4 use {@link
-     * #playerAddTransient(OfflinePlayer, String)} instead.
-     */
-    @Override
-    public boolean playerAddTransient(final String player,
-                                      final String permission)
-        throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("playerAddTransient()"
-                                                + " not supported!");
-    }
-
-    /**
      * Add transient permission to a player.
      * This implementation can be used by any subclass which
      * implements a "pure" superperms plugin, i.e.  one that only
@@ -331,30 +319,6 @@ final class VaultPerm extends Permission {
                                       final Player player,
                                       final String permission) {
         throw new UnsupportedOperationException("playerAddTransient()"
-                                                + " not supported!");
-    }
-
-    /**
-     * @deprecated As of VaultAPI 1.4 use {@link
-     * #playerAddTransient(String, OfflinePlayer, String)} instead.
-     */
-    @Override
-    public boolean playerAddTransient(final String worldName,
-                                      final String player,
-                                      final String permission) {
-        throw new UnsupportedOperationException("playerAddTransient()"
-                                                + " not supported!");
-    }
-
-    /**
-     * @deprecated As of VaultAPI 1.4 use {@link
-     * #playerRemoveTransient(String, OfflinePlayer, String)} instead.
-     */
-    @Override
-    public boolean playerRemoveTransient(final String worldName,
-                                         final String player,
-                                         final String permission) {
-        throw new UnsupportedOperationException("playerRemoveTransient()"
                                                 + " not supported!");
     }
 
@@ -464,17 +428,6 @@ final class VaultPerm extends Permission {
     public boolean playerRemove(final Player player,
                                 final String permission) {
         return playerRemove(player.getWorld().getName(), player, permission);
-    }
-
-    /**
-     * @deprecated As of VaultAPI 1.4 use {@link
-     * #playerRemoveTransient(OfflinePlayer, String)} instead.
-     */
-    @Override
-    public boolean playerRemoveTransient(final String player,
-                                         final String permission) {
-        throw new UnsupportedOperationException("playerRemoveTransient()"
-                                                + " not supported!");
     }
 
     /**
