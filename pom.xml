@@ -30,7 +30,7 @@
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.16.3-R0.1-SNAPSHOT</version>
+      <version>1.16.4-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
 
@@ -38,7 +38,7 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>1.18.12</version>
+      <version>1.18.16</version>
       <scope>provided</scope>
     </dependency>
 
@@ -62,6 +62,14 @@
     <dependency>
       <groupId>com.winthier.generic_events</groupId>
       <artifactId>generic_events</artifactId>
+      <version>0.1-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- Connect -->
+    <dependency>
+      <groupId>com.winthier.connect</groupId>
+      <artifactId>connect</artifactId>
       <version>0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>

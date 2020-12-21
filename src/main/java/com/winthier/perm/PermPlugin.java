@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.Getter;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
@@ -31,6 +32,7 @@ public final class PermPlugin extends JavaPlugin {
     BukkitRunnable updateTask;
     PermCommand command = new PermCommand(this);
     EventListener listener = new EventListener(this);
+    ConnectHandler connectHandler;
 
     @Override
     public void onLoad() {
@@ -57,10 +59,12 @@ public final class PermPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(listener, this);
         getCommand("perm").setExecutor(command);
         refreshPermissions();
-        if (!vaultEnabled
-            && getServer().getPluginManager().isPluginEnabled("Vault")) {
+        if (!vaultEnabled && getServer().getPluginManager().isPluginEnabled("Vault")) {
             VaultPerm vaultPerm = new VaultPerm(this);
             vaultPerm.register();
+        }
+        if (Bukkit.getPluginManager().isPluginEnabled("Connect")) {
+            connectHandler = new ConnectHandler(this).enable();
         }
     }
 
@@ -100,6 +104,9 @@ public final class PermPlugin extends JavaPlugin {
         }
         version.setVersion(new Date());
         db.save(version);
+        if (connectHandler != null) {
+            connectHandler.broadcastRefresh();
+        }
     }
 
     void refreshPermissions() {
