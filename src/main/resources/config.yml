@@ -1,3 +1,2 @@
 DefaultGroup: guest
-RefreshInterval: 30
-MigrationEnabled: false
+RefreshInterval: 300

@@ -26,7 +26,6 @@ public final class PermPlugin extends JavaPlugin {
     Cache cache;
     String defaultGroup = "Guest";
     int refreshInterval = 30;
-    boolean migrationEnabled = false;
     boolean refreshScheduled = false;
     boolean vaultEnabled = false;
     BukkitRunnable updateTask;
@@ -79,7 +78,6 @@ public final class PermPlugin extends JavaPlugin {
         reloadConfig();
         defaultGroup = getConfig().getString("DefaultGroup");
         refreshInterval = getConfig().getInt("RefreshInterval");
-        migrationEnabled = getConfig().getBoolean("MigrationEnabled");
         if (updateTask != null) {
             updateTask.cancel();
             updateTask = null;
