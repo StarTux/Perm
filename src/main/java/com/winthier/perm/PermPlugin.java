@@ -22,16 +22,19 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 @Getter
 public final class PermPlugin extends JavaPlugin {
-    SQLDatabase db;
-    Cache cache;
-    String defaultGroup = "Guest";
-    int refreshInterval = 30;
-    boolean refreshScheduled = false;
-    boolean vaultEnabled = false;
-    BukkitRunnable updateTask;
-    PermCommand command = new PermCommand(this);
-    EventListener listener = new EventListener(this);
-    ConnectHandler connectHandler;
+    protected SQLDatabase db;
+    protected Cache cache;
+    protected String defaultGroup = "Guest";
+    protected int refreshInterval = 30;
+    protected boolean refreshScheduled = false;
+    protected boolean vaultEnabled = false;
+    protected BukkitRunnable updateTask;
+    protected PermCommand permCommand = new PermCommand(this);
+    protected PromoteCommand promoteCommand = new PromoteCommand(this);
+    protected EventListener listener = new EventListener(this);
+    protected ConnectHandler connectHandler;
+    protected String joinGroup = "";
+    protected boolean joinGroupEnabled = false;
 
     @Override
     public void onLoad() {
@@ -56,7 +59,8 @@ public final class PermPlugin extends JavaPlugin {
                           SQLVersion.class);
         db.createAllTables();
         getServer().getPluginManager().registerEvents(listener, this);
-        getCommand("perm").setExecutor(command);
+        getCommand("perm").setExecutor(permCommand);
+        getCommand("promote").setExecutor(promoteCommand);
         refreshPermissions();
         if (!vaultEnabled && getServer().getPluginManager().isPluginEnabled("Vault")) {
             VaultPerm vaultPerm = new VaultPerm(this);
@@ -90,6 +94,9 @@ public final class PermPlugin extends JavaPlugin {
                 };
             updateTask.runTaskTimer(this, 0, refreshInterval * 20);
         }
+        joinGroup = getConfig().getString("JoinGroup");
+        joinGroupEnabled = joinGroup != null && !joinGroup.isEmpty();
+        if (joinGroupEnabled) getLogger().info("Join Group Feature Enabled: " + joinGroup);
     }
 
     void updateVersion() {
@@ -129,14 +136,14 @@ public final class PermPlugin extends JavaPlugin {
                     currentRow = newCache.findGroup(currentRow.getParent());
                 }
             } while (currentRow != null);
-            newCache.groupMembers.put(row.getKey(), new ArrayList<>());
+            newCache.groupMembers.put(row.getKey(), new HashSet<>());
             newCache.groupPrios.put(row.getKey(), row.getPriority());
             newCache.flatGroupPerms.put(row.getKey(), new HashMap<>());
         }
         for (SQLMember row : newCache.members) {
-            List<UUID> list = newCache.groupMembers.get(row.getGroup());
-            if (list == null) continue;
-            list.add(row.getMember());
+            Set<UUID> set = newCache.groupMembers.get(row.getGroup());
+            if (set == null) continue;
+            set.add(row.getMember());
         }
         for (SQLPermission row : newCache.permissions) {
             if (row.getIsGroup()) {

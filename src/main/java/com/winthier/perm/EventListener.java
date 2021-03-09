@@ -1,6 +1,8 @@
 package com.winthier.perm;
 
 import com.winthier.generic_events.PlayerHasPermissionEvent;
+import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,6 +25,15 @@ public final class EventListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerLogin(final PlayerLoginEvent event) {
+        if (plugin.joinGroupEnabled) {
+            Set<UUID> members = plugin.cache.groupMembers.get(plugin.joinGroup);
+            if (members == null || !members.contains(event.getPlayer().getUniqueId())) {
+                SQLGroup group = plugin.cache.findGroup(plugin.joinGroup);
+                String groupName = group != null ? group.getDisplayName() : plugin.joinGroup;
+                event.disallow(PlayerLoginEvent.Result.KICK_WHITELIST, "You're not a " + groupName + "!");
+                return;
+            }
+        }
         plugin.setupPlayerPerms(event.getPlayer());
     }
 
@@ -33,8 +44,7 @@ public final class EventListener implements Listener {
 
     @EventHandler
     public void onPlayerHasPermission(final PlayerHasPermissionEvent event) {
-        boolean has = plugin.playerHasPerm(event.getPlayerId(),
-                                           event.getPermission());
+        boolean has = plugin.playerHasPerm(event.getPlayerId(), event.getPermission());
         event.setPermitted(has);
     }
 }

@@ -8,6 +8,7 @@ main: com.winthier.perm.PermPlugin
 depend: [SQL, GenericEvents]
 softdepend: [Vault, Connect]
 commands:
+
   perm:
     description: Admin command
     permission: perm.perm
@@ -17,7 +18,18 @@ commands:
       /perm reload - Reload configuration
       /perm refresh - Refresh permission cache
       /perm list <what> ... - List things
+
+  promote:
+    description: Promote a player
+    permission: perm.promote
+    usage: /promote <player>
+
 permissions:
+
   perm.perm:
     description: Use /perm
+    default: op
+
+  perm.promote:
+    description: Use /promote
     default: op
