@@ -59,7 +59,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String,
      * OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean has(final String world,
                        final String player,
                        final String permission) {
@@ -72,7 +72,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String,
      * OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean has(final World world,
                        final String player,
                        final String permission) {
@@ -119,7 +119,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String,
      * OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerHas(final String world,
                              final String player,
                              final String permission) {
@@ -132,7 +132,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link #playerHas(String,
      * OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerHas(final World world,
                              final String player,
                              final String permission) {
@@ -190,7 +190,7 @@ final class VaultPerm extends Permission {
      * @param permission Permission node
      * @return Success or Failure
      */
-    @Override
+    @Override @Deprecated
     public boolean playerAdd(final String world,
                              final String player,
                              final String permission) {
@@ -203,7 +203,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link #playerAdd(String,
      * OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerAdd(final World world,
                              final String player,
                              final String permission) {
@@ -364,7 +364,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link #playerRemove(String,
      * OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerRemove(final String world,
                                 final String player,
                                 final String permission) {
@@ -581,7 +581,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #playerInGroup(String, OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerInGroup(final String world,
                                  final String player,
                                  final String group) {
@@ -594,7 +594,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #playerInGroup(String, OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerInGroup(final World world,
                                  final String player,
                                  final String group) {
@@ -643,7 +643,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #playerAddGroup(String, OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerAddGroup(final String world,
                                   final String player,
                                   final String group) {
@@ -656,7 +656,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #playerAddGroup(String, OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerAddGroup(final World world,
                                   final String player,
                                   final String group) {
@@ -704,7 +704,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #playerRemoveGroup(String, OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerRemoveGroup(final String world,
                                      final String player,
                                      final String group) {
@@ -717,7 +717,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #playerRemoveGroup(String, OfflinePlayer, String)} instead.
      */
-    @Override
+    @Override @Deprecated
     public boolean playerRemoveGroup(final World world,
                                      final String player,
                                      final String group) {
@@ -766,7 +766,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #getPlayerGroups(String, OfflinePlayer)} instead.
      */
-    @Override
+    @Override @Deprecated
     public String[] getPlayerGroups(final String world,
                                     final String player) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
@@ -778,7 +778,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #getPlayerGroups(String, OfflinePlayer)} instead.
      */
-    @Override
+    @Override @Deprecated
     public String[] getPlayerGroups(final World world,
                                     final String player) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
@@ -826,7 +826,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #getPrimaryGroup(String, OfflinePlayer)} instead.
      */
-    @Override
+    @Override @Deprecated
     public String getPrimaryGroup(final String world,
                                   final String player) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);
@@ -849,7 +849,7 @@ final class VaultPerm extends Permission {
      * @deprecated As of VaultAPI 1.4 use {@link
      * #getPrimaryGroup(String, OfflinePlayer)} instead.
      */
-    @Override
+    @Override @Deprecated
     public String getPrimaryGroup(final World world,
                                   final String player) {
         UUID uuid = GenericEvents.cachedPlayerUuid(player);

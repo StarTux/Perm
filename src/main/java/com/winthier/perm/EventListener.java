@@ -4,6 +4,7 @@ import com.winthier.generic_events.PlayerHasPermissionEvent;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -30,7 +31,8 @@ public final class EventListener implements Listener {
             if (members == null || !members.contains(event.getPlayer().getUniqueId())) {
                 SQLGroup group = plugin.cache.findGroup(plugin.joinGroup);
                 String groupName = group != null ? group.getDisplayName() : plugin.joinGroup;
-                event.disallow(PlayerLoginEvent.Result.KICK_WHITELIST, "You're not a " + groupName + "!");
+                Component reason = Component.text("You're not a " + groupName + "!");
+                event.disallow(PlayerLoginEvent.Result.KICK_WHITELIST, reason);
                 return;
             }
         }

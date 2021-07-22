@@ -1,6 +1,7 @@
 package com.winthier.perm;
 
 import com.winthier.generic_events.GenericEvents;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -9,11 +10,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -395,31 +398,27 @@ public final class PermCommand implements TabExecutor {
         } else if ("members".equals(subcmd) && args.length == 2) {
             sender.sendMessage("Members of group " + groupName + ":");
             int count = 0;
+            List<Component> lines = new ArrayList<>();
             for (UUID uuid: plugin.findGroupMembers(groupName)) {
                 String name = GenericEvents.cachedPlayerName(uuid);
-                if (sender instanceof Player) {
-                    Player player = (Player) sender;
-                    ComponentBuilder cb = new ComponentBuilder();
-                    cb.append("- ").color(ChatColor.GRAY);
-                    cb.append(name);
-                    suggest(cb, "/perm player " + name + " ");
-                    cb.append(" ").reset();
-                    cb.append("[-]").color(ChatColor.RED);
-                    suggest(cb, "/perm player " + name + " removegroup "
-                            + group.getKey());
-                    cb.append(" ").reset();
-                    cb.append("[+]").color(ChatColor.BLUE);
-                    suggest(cb, "/perm player " + name + " addgroup ");
-                    cb.append("[~]").color(ChatColor.GOLD);
-                    suggest(cb, "/perm player " + name + " replacegroup "
-                            + group.getKey() + " ");
-                    player.spigot().sendMessage(cb.create());
-                } else {
-                    sender.sendMessage("- " + name);
-                }
+                TextComponent.Builder cb = Component.text();
+                cb.append(Component.text("- ", NamedTextColor.GRAY));
+                cb.append(Component.text(name, NamedTextColor.GRAY));
+                suggest(cb, "/perm player " + name + " ");
+                cb.append(Component.space());
+                cb.append(Component.text("[-]", NamedTextColor.RED));
+                suggest(cb, "/perm player " + name + " removegroup " + group.getKey());
+                cb.append(Component.space());
+                cb.append(Component.text("[+]", NamedTextColor.BLUE));
+                suggest(cb, "/perm player " + name + " addgroup ");
+                cb.append(Component.space());
+                cb.append(Component.text("[~]", NamedTextColor.GOLD));
+                suggest(cb, "/perm player " + name + " replacegroup " + group.getKey() + " ");
+                lines.add(cb.build());
                 count += 1;
             }
-            sender.sendMessage("Total " + count);
+            lines.add(Component.text("Total " + count, NamedTextColor.YELLOW));
+            sender.sendMessage(Component.join(Component.newline(), lines));
             return true;
         } else if ("set".equals(subcmd)
                    && (args.length == 3 || args.length == 4)) {
@@ -680,18 +679,11 @@ public final class PermCommand implements TabExecutor {
         return Arrays.copyOfRange(args, 1, args.length);
     }
 
-    private static TextComponent[] txt(String... args) {
-        return Stream.of(args)
-            .map(s -> ChatColor.translateAlternateColorCodes('&', s))
-            .map(TextComponent::new)
-            .toArray(TextComponent[]::new);
-    }
-
-    private static void suggest(ComponentBuilder cb, String cmd) {
-        cb.event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND,
-                                cmd));
-        cb.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                txt(cmd)));
+    private static void suggest(TextComponent.Builder cb, String cmd) {
+        cb.clickEvent(ClickEvent.suggestCommand(cmd));
+        Component tooltip = Component.text().content(cmd).color(NamedTextColor.GRAY)
+            .decoration(TextDecoration.ITALIC, false).build();
+        cb.hoverEvent(HoverEvent.showText(tooltip));
     }
 
     private static boolean in(String key, String... haystack) {
