@@ -35,9 +35,11 @@ public final class PermPlugin extends JavaPlugin {
     protected ConnectHandler connectHandler;
     protected String joinGroup = "";
     protected boolean joinGroupEnabled = false;
+    @Getter protected static PermPlugin instance;
 
     @Override
     public void onLoad() {
+        instance = this;
         if (!vaultEnabled) {
             try {
                 Class.forName("net.milkbowl.vault.permission.Permission");
