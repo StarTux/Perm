@@ -5,7 +5,7 @@ version: 0.1
 api-version: 1.17
 website: http://cavetale.com
 main: com.winthier.perm.PermPlugin
-depend: [SQL, GenericEvents]
+depend: [SQL, Core, PlayerCache]
 softdepend: [Vault, Connect]
 commands:
 

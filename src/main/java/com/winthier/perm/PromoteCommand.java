@@ -1,12 +1,12 @@
 package com.winthier.perm;
 
-import com.winthier.generic_events.GenericEvents;
+import com.winthier.playercache.PlayerCache;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 
 @RequiredArgsConstructor
 public final class PromoteCommand implements CommandExecutor {
@@ -16,12 +16,12 @@ public final class PromoteCommand implements CommandExecutor {
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
         if (args.length != 1) return false;
         String playerName = args[0];
-        UUID playerUuid = GenericEvents.cachedPlayerUuid(playerName);
+        UUID playerUuid = PlayerCache.uuidForName(playerName);
         if (playerUuid == null) {
             sender.sendMessage("Player not found: " + playerName);
             return true;
         }
-        playerName = GenericEvents.cachedPlayerName(playerUuid);
+        playerName = PlayerCache.nameForUuid(playerUuid);
         String fromGroupArg = "friendly";
         String toGroupArg = "member";
         SQLGroup fromGroup = plugin.cache.findGroup(fromGroupArg);

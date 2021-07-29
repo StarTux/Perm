@@ -1,6 +1,6 @@
 package com.winthier.perm;
 
-import com.winthier.generic_events.GenericEvents;
+import com.winthier.playercache.PlayerCache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,12 +56,12 @@ public final class PermCommand implements TabExecutor {
     boolean playerCommand(CommandSender sender, String[] args) {
         if (args.length < 1) return false;
         String playerName = args[0];
-        UUID playerUuid = GenericEvents.cachedPlayerUuid(playerName);
+        UUID playerUuid = PlayerCache.uuidForName(playerName);
         if (playerUuid == null) {
             sender.sendMessage("Player not found: " + playerName);
             return true;
         }
-        playerName = GenericEvents.cachedPlayerName(playerUuid);
+        playerName = PlayerCache.nameForUuid(playerUuid);
         String subcmd = args.length >= 2 ? args[1] : null;
         if ("get".equals(subcmd) && args.length == 3) {
             String perm = args[2];
@@ -400,7 +400,7 @@ public final class PermCommand implements TabExecutor {
             int count = 0;
             List<Component> lines = new ArrayList<>();
             for (UUID uuid: plugin.findGroupMembers(groupName)) {
-                String name = GenericEvents.cachedPlayerName(uuid);
+                String name = PlayerCache.nameForUuid(uuid);
                 TextComponent.Builder cb = Component.text();
                 cb.append(Component.text("- ", NamedTextColor.GRAY));
                 cb.append(Component.text(name, NamedTextColor.GRAY));
@@ -441,12 +441,12 @@ public final class PermCommand implements TabExecutor {
             return true;
         } else if ("add".equals(subcmd) && args.length == 3) {
             String playerName = args[2];
-            UUID playerUuid = GenericEvents.cachedPlayerUuid(playerName);
+            UUID playerUuid = PlayerCache.uuidForName(playerName);
             if (playerUuid == null) {
                 sender.sendMessage("Player not found: " + playerName);
                 return true;
             }
-            playerName = GenericEvents.cachedPlayerName(playerUuid);
+            playerName = PlayerCache.nameForUuid(playerUuid);
             if (plugin.setMembership(playerUuid, groupName, true)) {
                 sender.sendMessage(playerName + " added to group "
                                    + groupName);
@@ -457,12 +457,12 @@ public final class PermCommand implements TabExecutor {
             return true;
         } else if ("remove".equals(subcmd) && args.length == 3) {
             String playerName = args[2];
-            UUID playerUuid = GenericEvents.cachedPlayerUuid(playerName);
+            UUID playerUuid = PlayerCache.uuidForName(playerName);
             if (playerUuid == null) {
                 sender.sendMessage("Player not found: " + playerName);
                 return true;
             }
-            playerName = GenericEvents.cachedPlayerName(playerUuid);
+            playerName = PlayerCache.nameForUuid(playerUuid);
             if (plugin.setMembership(playerUuid, groupName, false)) {
                 sender.sendMessage(playerName + " removed from group "
                                    + groupName);
@@ -562,7 +562,7 @@ public final class PermCommand implements TabExecutor {
             for (SQLPermission permission : plugin.cache.permissions) {
                 if (permission.getIsGroup()) continue;
                 final UUID uuid = UUID.fromString(permission.getEntity());
-                String playerName = GenericEvents.cachedPlayerName(uuid);
+                String playerName = PlayerCache.nameForUuid(uuid);
                 sender.sendMessage(playerName + ": "
                                    + permission.getPermission()
                                    + ": " + permission.getValue());
@@ -602,7 +602,7 @@ public final class PermCommand implements TabExecutor {
         case "player": {
             // /perm 0player 1NAME 2sub ...
             if (args.length <= 2) return null;
-            UUID uuid = GenericEvents.cachedPlayerUuid(args[1]);
+            UUID uuid = PlayerCache.uuidForName(args[1]);
             if (uuid == null) return Collections.emptyList();
             if (args.length == 3) {
                 return starts(arg,
