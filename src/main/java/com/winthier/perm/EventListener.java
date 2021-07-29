@@ -1,6 +1,5 @@
 package com.winthier.perm;
 
-import com.winthier.generic_events.PlayerHasPermissionEvent;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -42,11 +41,5 @@ public final class EventListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerQuit(final PlayerQuitEvent event) {
         plugin.resetPlayerPerms(event.getPlayer());
-    }
-
-    @EventHandler
-    public void onPlayerHasPermission(final PlayerHasPermissionEvent event) {
-        boolean has = plugin.playerHasPerm(event.getPlayerId(), event.getPermission());
-        event.setPermitted(has);
     }
 }
