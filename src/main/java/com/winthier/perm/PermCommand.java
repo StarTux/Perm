@@ -16,11 +16,13 @@ import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
+import org.bukkit.permissions.Permission;
 
 @RequiredArgsConstructor
 public final class PermCommand implements TabExecutor {
@@ -588,66 +590,71 @@ public final class PermCommand implements TabExecutor {
         String cmd = args[0];
         String arg = args[args.length - 1];
         if (args.length == 1) {
-            return starts(arg,
-                          Stream.of("player", "group", "list",
-                                    "reload", "refresh"));
+            return contains(arg,
+                            Stream.of("player", "group", "list",
+                                      "reload", "refresh"));
         }
         switch (cmd) {
         case "list":
             if (args.length == 2) {
-                return starts(arg,
-                              Stream.of("groups", "playerperms"));
+                return contains(arg,
+                                Stream.of("groups", "playerperms"));
             }
-            return null;
+            return Collections.emptyList();
         case "player": {
             // /perm 0player 1NAME 2sub ...
             if (args.length <= 2) return null;
             UUID uuid = PlayerCache.uuidForName(args[1]);
             if (uuid == null) return Collections.emptyList();
             if (args.length == 3) {
-                return starts(arg,
-                              Stream.of("get", "show", "dump", "has",
-                                        "set", "unset",
-                                        "groups",
-                                        "addgroup", "removegroup",
-                                        "setgroup", "replacegroup"));
+                return contains(arg,
+                                Stream.of("get", "show", "dump", "has",
+                                          "set", "unset",
+                                          "groups",
+                                          "addgroup", "removegroup",
+                                          "setgroup", "replacegroup"));
             }
             String sub = args[2];
             if (in(sub, "addgroup", "setgroup")) {
                 if (args.length == 4) {
-                    return starts(arg, plugin.getGroups().stream());
+                    return contains(arg, plugin.getGroups().stream());
                 }
                 return Collections.emptyList();
             }
             if (in(sub, "removegroup")) {
                 if (args.length == 4) {
-                    return starts(arg, plugin.findPlayerGroups(uuid).stream());
+                    return contains(arg, plugin.findPlayerGroups(uuid).stream());
                 }
                 return Collections.emptyList();
             }
             if (in(sub, "replacegroup")) {
                 if (args.length == 4) {
-                    return starts(arg, plugin.findPlayerGroups(uuid).stream());
+                    return contains(arg, plugin.findPlayerGroups(uuid).stream());
                 }
                 if (args.length == 5) {
-                    return starts(arg, plugin.getGroups().stream());
+                    return contains(arg, plugin.getGroups().stream());
                 }
                 return Collections.emptyList();
             }
-            return null;
+            if (in(sub, "set", "unset")) {
+                if (args.length == 4) {
+                    return completePermissions(arg);
+                }
+            }
+            return Collections.emptyList();
         }
         case "group": {
             // /perm 0group 1GROUP 2sub
             if (args.length == 2) {
-                return starts(arg, plugin.getGroups().stream());
+                return contains(arg, plugin.getGroups().stream());
             }
             if (args.length == 3) {
-                return starts(arg,
-                              Stream.of("info", "show", "dump",
-                                        "get", "set", "unset",
-                                        "members", "add", "remove",
-                                        "create", "setpriority",
-                                        "setparent", "resetparent"));
+                return contains(arg,
+                                Stream.of("info", "show", "dump",
+                                          "get", "set", "unset",
+                                          "members", "add", "remove",
+                                          "create", "setpriority",
+                                          "setparent", "resetparent"));
             }
             String sub = args[2];
             if (in(sub, "info", "remove", "resetparent")) {
@@ -655,7 +662,7 @@ public final class PermCommand implements TabExecutor {
             }
             if (in(sub, "setparent")) {
                 if (args.length == 4) {
-                    return starts(arg, plugin.getGroups().stream());
+                    return contains(arg, plugin.getGroups().stream());
                 }
                 return Collections.emptyList();
             }
@@ -668,7 +675,12 @@ public final class PermCommand implements TabExecutor {
                 }
                 return Collections.emptyList();
             }
-            return null;
+            if (in(sub, "set", "unset")) {
+                if (args.length == 4) {
+                    return completePermissions(arg);
+                }
+            }
+            return Collections.emptyList();
         }
         default:
             return null;
@@ -693,9 +705,16 @@ public final class PermCommand implements TabExecutor {
         return false;
     }
 
-    private static List<String> starts(String key, Stream<String> keys) {
+    private static List<String> contains(String key, Stream<String> keys) {
         return keys
-            .filter(k -> k.startsWith(key))
+            .filter(k -> k.contains(key))
+            .collect(Collectors.toList());
+    }
+
+    private List<String> completePermissions(String key) {
+        return Bukkit.getPluginManager().getPermissions().stream()
+            .map(Permission::getName)
+            .filter(p -> p.contains(key))
             .collect(Collectors.toList());
     }
 }
