@@ -1,5 +1,6 @@
 package com.winthier.perm;
 
+import com.winthier.perm.event.PlayerPermissionUpdateEvent;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -80,7 +81,7 @@ public final class PermPlugin extends JavaPlugin {
         }
     }
 
-    void readConfiguration() {
+    protected void readConfiguration() {
         reloadConfig();
         defaultGroup = getConfig().getString("DefaultGroup");
         refreshInterval = getConfig().getInt("RefreshInterval");
@@ -101,7 +102,7 @@ public final class PermPlugin extends JavaPlugin {
         if (joinGroupEnabled) getLogger().info("Join Group Feature Enabled: " + joinGroup);
     }
 
-    void updateVersion() {
+    protected void updateVersion() {
         SQLVersion version;
         if (cache != null) {
             version = cache.version;
@@ -116,7 +117,7 @@ public final class PermPlugin extends JavaPlugin {
         }
     }
 
-    void refreshPermissions() {
+    protected void refreshPermissions() {
         Cache newCache = new Cache();
         newCache.groups = db.find(SQLGroup.class).findList();
         newCache.members = db.find(SQLMember.class).findList();
@@ -170,7 +171,7 @@ public final class PermPlugin extends JavaPlugin {
         }
     }
 
-    void testVersion() {
+    private void testVersion() {
         SQLVersion version = db.find(SQLVersion.class)
             .eq("name", "Perm")
             .findUnique();
@@ -181,7 +182,7 @@ public final class PermPlugin extends JavaPlugin {
         }
     }
 
-    Map<String, Boolean> findPlayerPerms(final UUID uuid) {
+    protected Map<String, Boolean> findPlayerPerms(final UUID uuid) {
         Map<String, Boolean> perms = cache.deepPlayerPerms.get(uuid);
         if (perms != null) return perms;
         Set<String> assignedGroups = new HashSet<>();
@@ -219,7 +220,7 @@ public final class PermPlugin extends JavaPlugin {
         return perms;
     }
 
-    Map<String, Boolean> findGroupPerms(final String groupName) {
+    protected Map<String, Boolean> findGroupPerms(final String groupName) {
         final Map<String, Boolean> perms = new HashMap<>();
         SQLGroup group = cache.findGroup(groupName);
         if (group == null) return perms;
@@ -257,43 +258,57 @@ public final class PermPlugin extends JavaPlugin {
         return perms;
     }
 
-    void resetPlayerPerms(final Player player) {
+    protected void resetPlayerPerms(final Player player) {
         for (PermissionAttachmentInfo info: player.getEffectivePermissions()) {
             PermissionAttachment attach = info.getAttachment();
             if (attach != null && attach.getPlugin().equals(this)) {
                 attach.remove();
             }
             final UUID uuid = player.getUniqueId();
-            final String motherPerm = "Perm-" + player.getUniqueId();
+            final String motherPerm = "perm-" + player.getUniqueId();
             getServer().getPluginManager().removePermission(motherPerm);
         }
         cache.deepPlayerPerms.remove(player.getUniqueId());
     }
 
-    void setupPlayerPerms(final Player player) {
+    protected void setupPlayerPerms(final Player player) {
         Map<String, Boolean> perms = findPlayerPerms(player.getUniqueId());
         // This is a little trick I learned from zPermissions.  Do not
         // add an attachment as adding permissions to it is slow.
         // Instead, create a parent permission for the player
         // containing all their effective permissions as children.
-        String motherPerm = "Perm-" + player.getUniqueId();
-        Permission permission = getServer().getPluginManager()
-            .getPermission(motherPerm);
+        String motherPerm = "perm-" + player.getUniqueId();
+        Permission permission = getServer().getPluginManager().getPermission(motherPerm);
+        final boolean updateRequired;
+        final Map<String, Boolean> oldPerms = new HashMap<>();
+        final boolean isInitialSetup;
         if (permission == null) {
-            permission = new Permission(motherPerm,
-                                        PermissionDefault.FALSE,
-                                        perms);
+            updateRequired = true;
+            isInitialSetup = true;
+            permission = new Permission(motherPerm, PermissionDefault.FALSE, perms);
             getServer().getPluginManager().addPermission(permission);
         } else {
-            permission.getChildren().clear();
-            permission.getChildren().putAll(perms);
+            isInitialSetup = false;
+            oldPerms.putAll(permission.getChildren());
+            updateRequired = !perms.equals(oldPerms);
+            if (updateRequired) {
+                permission.getChildren().clear();
+                permission.getChildren().putAll(perms);
+            }
         }
-        if (!player.isPermissionSet(motherPerm)
-            || !player.hasPermission(motherPerm)) {
-            PermissionAttachment attach =
-                player.addAttachment(this, motherPerm, true);
-        } else {
+        if (!player.isPermissionSet(motherPerm) || !player.hasPermission(motherPerm)) {
+            // This should only happen if isInitialSetup = true and
+            // updateRequired = true, but why not check if the
+            // attachment is set anyway.
+            PermissionAttachment attach = player.addAttachment(this, motherPerm, true);
+        } else if (updateRequired) {
             permission.recalculatePermissibles();
+        }
+        if (updateRequired && !isInitialSetup) {
+            Bukkit.getScheduler().runTask(this, () -> {
+                    if (!player.isOnline()) return;
+                    new PlayerPermissionUpdateEvent(player, oldPerms, perms).call();
+                });
         }
     }
 
