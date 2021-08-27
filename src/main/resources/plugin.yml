@@ -22,7 +22,7 @@ commands:
   promote:
     description: Promote a player
     permission: perm.promote
-    usage: /promote <player>
+    usage: /promote <player> [rank]
 
 permissions:
 
