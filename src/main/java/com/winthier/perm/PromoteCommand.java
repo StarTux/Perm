@@ -15,7 +15,6 @@ import org.bukkit.command.TabExecutor;
 @RequiredArgsConstructor
 public final class PromoteCommand implements TabExecutor {
     private final PermPlugin plugin;
-    final List<String> ranks = Arrays.asList("friendly", "member", "iron"); // iron is temporary
 
     @Override
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
@@ -29,7 +28,7 @@ public final class PromoteCommand implements TabExecutor {
         final String toGroupArg;
         if (args.length == 2) {
             toGroupArg = args[1];
-            int index = ranks.indexOf(args[1]);
+            int index = PlayerRank.KEYS.indexOf(args[1]);
             if (index < 0) {
                 sender.sendMessage(Component.text("Rank not found: " + toGroupArg, NamedTextColor.RED));
                 return true;
@@ -38,7 +37,7 @@ public final class PromoteCommand implements TabExecutor {
                 sender.sendMessage(Component.text("Cannot promote to: " + toGroupArg, NamedTextColor.RED));
                 return true;
             }
-            fromGroupArg = ranks.get(index - 1);
+            fromGroupArg = PlayerRank.KEYS.get(index - 1);
         } else {
             fromGroupArg = "friendly";
             toGroupArg = "member";
@@ -77,7 +76,7 @@ public final class PromoteCommand implements TabExecutor {
     public List<String> onTabComplete(final CommandSender sender, final Command command, final String label, final String[] args) {
         if (args.length == 1) return null;
         if (args.length == 2) {
-            return ranks.subList(1, ranks.size()).stream()
+            return PlayerRank.KEYS.subList(1, PlayerRank.KEYS.size()).stream()
                 .filter(a -> a.contains(args[1]))
                 .collect(Collectors.toList());
         }
