@@ -1,5 +1,6 @@
 package com.winthier.perm;
 
+import com.cavetale.core.util.BukkitHacks;
 import com.winthier.perm.event.PlayerPermissionUpdateEvent;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
@@ -302,9 +303,10 @@ public final class PermPlugin extends JavaPlugin {
             // attachment is set anyway.
             PermissionAttachment attach = player.addAttachment(this, motherPerm, true);
         } else if (updateRequired) {
-            permission.recalculatePermissibles();
+            player.recalculatePermissions();
         }
         if (updateRequired && !isInitialSetup) {
+            BukkitHacks.syncCommands();
             Bukkit.getScheduler().runTask(this, () -> {
                     if (!player.isOnline()) return;
                     new PlayerPermissionUpdateEvent(player, oldPerms, perms).call();
