@@ -550,13 +550,19 @@ public final class PermCommand implements TabExecutor {
             ? args[0]
             : null;
         if ("groups".equals(subcmd)) {
-            sender.sendMessage("Total " + plugin.cache.groups.size()
-                               + " groups:");
-            for (SQLGroup group : plugin.cache.groups) {
-                sender.sendMessage("- " + group.getKey()
-                                   + " \"" + group.getDisplayName() + "\""
-                                   + " prio=" + group.getPriority()
-                                   + " parent=" + group.getParent());
+            sender.sendMessage(Component.text("Total " + plugin.cache.groups.size() + " groups:", NamedTextColor.YELLOW));
+            List<SQLGroup> groups = new ArrayList<>(plugin.cache.groups);
+            Collections.sort(groups, (a, b) -> Integer.compare(a.getPriority(), b.getPriority()));
+            for (SQLGroup group : groups) {
+                sender.sendMessage(TextComponent.ofChildren(new Component[] {
+                            Component.text("\u2022", NamedTextColor.GRAY),
+                            Component.text(" " + group.getPriority(), NamedTextColor.WHITE),
+                            Component.text(" " + group.getKey(), NamedTextColor.YELLOW),
+                            Component.text(" " + group.getDisplayName(), NamedTextColor.GRAY),
+                            (group.getParent() != null
+                             ? Component.text(" \u2192" + group.getParent(), NamedTextColor.YELLOW)
+                             : Component.empty()),
+                        }));
             }
         } else if ("playerperms".equals(subcmd)) {
             sender.sendMessage("Assigned player permissions:");

@@ -1,7 +1,6 @@
 package com.winthier.perm;
 
 import com.winthier.playercache.PlayerCache;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
