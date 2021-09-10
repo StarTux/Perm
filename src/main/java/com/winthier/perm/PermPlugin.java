@@ -304,13 +304,13 @@ public final class PermPlugin extends JavaPlugin {
             PermissionAttachment attach = player.addAttachment(this, motherPerm, true);
         } else if (updateRequired) {
             player.recalculatePermissions();
-        }
-        if (updateRequired && !isInitialSetup) {
-            BukkitHacks.syncCommands();
-            Bukkit.getScheduler().runTask(this, () -> {
-                    if (!player.isOnline()) return;
-                    new PlayerPermissionUpdateEvent(player, oldPerms, perms).call();
-                });
+            if (!isInitialSetup) {
+                Bukkit.getScheduler().runTask(this, () -> {
+                        player.updateCommands();
+                        if (!player.isOnline()) return;
+                        new PlayerPermissionUpdateEvent(player, oldPerms, perms).call();
+                    });
+            }
         }
     }
 
