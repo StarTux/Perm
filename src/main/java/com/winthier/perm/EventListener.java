@@ -1,9 +1,6 @@
 package com.winthier.perm;
 
-import java.util.Set;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import net.kyori.adventure.text.Component;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -19,22 +16,11 @@ public final class EventListener implements Listener {
     public void onPluginEnable(final PluginEnableEvent event) {
         if (plugin.vaultEnabled) return;
         if (!event.getPlugin().getName().equals("Vault")) return;
-        VaultPerm vaultPerm = new VaultPerm(plugin);
-        vaultPerm.register();
+        plugin.tryToLoadVault();
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerLogin(final PlayerLoginEvent event) {
-        if (plugin.joinGroupEnabled) {
-            Set<UUID> members = plugin.cache.groupMembers.get(plugin.joinGroup);
-            if (members == null || !members.contains(event.getPlayer().getUniqueId())) {
-                SQLGroup group = plugin.cache.findGroup(plugin.joinGroup);
-                String groupName = group != null ? group.getDisplayName() : plugin.joinGroup;
-                Component reason = Component.text("You're not a " + groupName + "!");
-                event.disallow(PlayerLoginEvent.Result.KICK_WHITELIST, reason);
-                return;
-            }
-        }
         plugin.setupPlayerPerms(event.getPlayer());
     }
 

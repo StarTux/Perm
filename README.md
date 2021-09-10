@@ -3,9 +3,9 @@ This is a simple permissions plugin intended for a multi-server network. It prov
 
 ## Commands
 The admin command comes with sufficient online help. Just type any command and the full syntax will be listed. Functions include creating and deleting groups, adding players to groups or removing them again, and assigning permissions to players or groups.
+
 - `/perm player <name> ...` - Player settings
 - `/perm group <group> ...` - Group settings
-- `/perm reload` - Reload configuration
 - `/perm refresh` - Refresh permission cache
 - `/perm list <what> ...` - List things
 

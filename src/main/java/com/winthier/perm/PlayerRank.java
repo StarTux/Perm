@@ -39,7 +39,7 @@ public enum PlayerRank {
         result = PermPlugin.instance.db.insert(new SQLMember(uuid, key));
         if (result != 1) return false;
         PermPlugin.instance.updateVersion();
-        PermPlugin.instance.refreshPermissions();
+        PermPlugin.instance.refreshPermissionsAsync();
         return true;
     }
 }

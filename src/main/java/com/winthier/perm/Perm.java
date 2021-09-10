@@ -22,7 +22,7 @@ public final class Perm {
     }
 
     public static Collection<String> getPerms(UUID uuid) {
-        Map<String, Boolean> map = PermPlugin.instance.findPlayerPerms(uuid);
+        Map<String, Boolean> map = PermPlugin.instance.cache.findPlayerPerms(uuid);
         List<String> result = new ArrayList<>(map.size());
         for (Map.Entry<String, Boolean> entry : map.entrySet()) {
             if (entry.getValue() == Boolean.TRUE) {

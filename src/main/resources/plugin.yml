@@ -15,7 +15,6 @@ commands:
     usage: |-
       /perm player <name> ... - Player settings
       /perm group <group> ... - Group settings
-      /perm reload - Reload configuration
       /perm refresh - Refresh permission cache
       /perm list <what> ... - List things
 

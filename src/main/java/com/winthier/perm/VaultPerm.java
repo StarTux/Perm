@@ -830,9 +830,9 @@ final class VaultPerm extends Permission {
     public String getPrimaryGroup(final String world,
                                   final String player) {
         UUID uuid = PlayerCache.uuidForName(player);
-        if (uuid == null) return permPlugin.getDefaultGroup();
+        if (uuid == null) return PermPlugin.DEFAULT_GROUP;
         List<String> groups = permPlugin.findPlayerGroups(uuid);
-        if (groups.isEmpty()) return permPlugin.getDefaultGroup();
+        if (groups.isEmpty()) return PermPlugin.DEFAULT_GROUP;
         String result = groups.get(0);
         int prio = 0;
         for (String name: groups) {
@@ -853,9 +853,9 @@ final class VaultPerm extends Permission {
     public String getPrimaryGroup(final World world,
                                   final String player) {
         UUID uuid = PlayerCache.uuidForName(player);
-        if (uuid == null) return permPlugin.getDefaultGroup();
+        if (uuid == null) return PermPlugin.DEFAULT_GROUP;
         List<String> groups = permPlugin.findPlayerGroups(uuid);
-        if (groups.isEmpty()) return permPlugin.getDefaultGroup();
+        if (groups.isEmpty()) return PermPlugin.DEFAULT_GROUP;
         return groups.get(0);
     }
 
@@ -873,7 +873,7 @@ final class VaultPerm extends Permission {
     public String getPrimaryGroup(final String world,
                                   final OfflinePlayer player) {
         List<String> groups = permPlugin.findPlayerGroups(player.getUniqueId());
-        if (groups.isEmpty()) return permPlugin.getDefaultGroup();
+        if (groups.isEmpty()) return PermPlugin.DEFAULT_GROUP;
         return groups.get(0);
     }
 
@@ -889,7 +889,7 @@ final class VaultPerm extends Permission {
     @Override
     public String getPrimaryGroup(final Player player) {
         List<String> groups = permPlugin.findPlayerGroups(player.getUniqueId());
-        if (groups.isEmpty()) return permPlugin.getDefaultGroup();
+        if (groups.isEmpty()) return PermPlugin.DEFAULT_GROUP;
         return groups.get(0);
     }
 

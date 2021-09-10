@@ -1,16 +1,11 @@
 package com.winthier.perm;
 
-import com.cavetale.core.util.BukkitHacks;
 import com.winthier.perm.event.PlayerPermissionUpdateEvent;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import lombok.Getter;
 import org.bukkit.Bukkit;
@@ -24,38 +19,26 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 @Getter
 public final class PermPlugin extends JavaPlugin {
+    protected static final String DEFAULT_GROUP = "guest";
+    protected static final long REFRESH_INTERVAL = 30L * 20L;
     protected SQLDatabase db;
     protected Cache cache;
-    protected String defaultGroup = "Guest";
-    protected int refreshInterval = 30;
-    protected boolean refreshScheduled = false;
     protected boolean vaultEnabled = false;
     protected BukkitRunnable updateTask;
     protected PermCommand permCommand = new PermCommand(this);
     protected PromoteCommand promoteCommand = new PromoteCommand(this);
     protected EventListener listener = new EventListener(this);
     protected ConnectHandler connectHandler;
-    protected String joinGroup = "";
-    protected boolean joinGroupEnabled = false;
     @Getter protected static PermPlugin instance;
 
     @Override
     public void onLoad() {
         instance = this;
-        if (!vaultEnabled) {
-            try {
-                Class.forName("net.milkbowl.vault.permission.Permission");
-                VaultPerm vaultPerm = new VaultPerm(this);
-                vaultPerm.register();
-            } catch (ClassNotFoundException ncfe) { }
-        }
+        tryToLoadVault();
     }
 
     @Override
     public void onEnable() {
-        reloadConfig();
-        saveDefaultConfig();
-        readConfiguration();
         db = new SQLDatabase(this);
         db.registerTables(SQLGroup.class,
                           SQLMember.class,
@@ -65,44 +48,36 @@ public final class PermPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(listener, this);
         getCommand("perm").setExecutor(permCommand);
         getCommand("promote").setExecutor(promoteCommand);
-        refreshPermissions();
-        if (!vaultEnabled && getServer().getPluginManager().isPluginEnabled("Vault")) {
-            VaultPerm vaultPerm = new VaultPerm(this);
-            vaultPerm.register();
-        }
+        refreshPermissionsSync();
+        tryToLoadVault();
         if (Bukkit.getPluginManager().isPluginEnabled("Connect")) {
             connectHandler = new ConnectHandler(this).enable();
         }
+        Bukkit.getScheduler().runTaskTimer(this, this::testVersion, 0L, REFRESH_INTERVAL);
     }
 
     @Override
     public void onDisable() {
-        for (Player player: getServer().getOnlinePlayers()) {
+        for (Player player : getServer().getOnlinePlayers()) {
             resetPlayerPerms(player);
         }
     }
 
-    protected void readConfiguration() {
-        reloadConfig();
-        defaultGroup = getConfig().getString("DefaultGroup");
-        refreshInterval = getConfig().getInt("RefreshInterval");
-        if (updateTask != null) {
-            updateTask.cancel();
-            updateTask = null;
-        }
-        if (refreshInterval > 0) {
-            updateTask = new BukkitRunnable() {
-                    @Override public void run() {
-                        testVersion();
-                    }
-                };
-            updateTask.runTaskTimer(this, 0, refreshInterval * 20);
-        }
-        joinGroup = getConfig().getString("JoinGroup");
-        joinGroupEnabled = joinGroup != null && !joinGroup.isEmpty();
-        if (joinGroupEnabled) getLogger().info("Join Group Feature Enabled: " + joinGroup);
+    protected void tryToLoadVault() {
+        if (vaultEnabled) return;
+        try {
+            Class.forName("net.milkbowl.vault.permission.Permission");
+            VaultPerm vaultPerm = new VaultPerm(this);
+            vaultPerm.register();
+            vaultEnabled = true;
+        } catch (ClassNotFoundException ncfe) { }
     }
 
+    /**
+     * Update the version in the database, and broadcast it. Thich
+     * will trigger other servers to refresh permissions as soon as
+     * possible. Writing to the database is done asynchronously.
+     */
     protected void updateVersion() {
         SQLVersion version;
         if (cache != null) {
@@ -111,156 +86,55 @@ public final class PermPlugin extends JavaPlugin {
             version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
             if (version == null) version = new SQLVersion("Perm");
         }
-        version.setVersion(new Date());
-        db.save(version);
+        version.setNow();
+        db.saveAsync(version, null);
         if (connectHandler != null) {
             connectHandler.broadcastRefresh();
         }
     }
 
-    protected void refreshPermissions() {
+    protected void refreshPermissionsSync() {
         Cache newCache = new Cache();
-        newCache.groups = db.find(SQLGroup.class).findList();
-        newCache.members = db.find(SQLMember.class).findList();
-        newCache.permissions = db.find(SQLPermission.class).findList();
-        newCache.version = db.find(SQLVersion.class).eq("name", "Perm")
-            .findUnique();
-        if (newCache.version == null) newCache.version = new SQLVersion("Perm");
-        newCache.deepGroupParents.put(defaultGroup,
-                                      new ArrayList<>());
-        for (SQLGroup row : newCache.groups) {
-            List<String> deepGroupParents = new ArrayList<>();
-            newCache.deepGroupParents.put(row.getKey(), deepGroupParents);
-            SQLGroup currentRow = row;
-            do {
-                deepGroupParents.add(currentRow.getKey());
-                if (currentRow.getParent() == null) {
-                    currentRow = null;
-                } else {
-                    currentRow = newCache.findGroup(currentRow.getParent());
-                }
-            } while (currentRow != null);
-            newCache.groupMembers.put(row.getKey(), new HashSet<>());
-            newCache.groupPrios.put(row.getKey(), row.getPriority());
-            newCache.flatGroupPerms.put(row.getKey(), new HashMap<>());
-        }
-        for (SQLMember row : newCache.members) {
-            Set<UUID> set = newCache.groupMembers.get(row.getGroup());
-            if (set == null) continue;
-            set.add(row.getMember());
-        }
-        for (SQLPermission row : newCache.permissions) {
-            if (row.getIsGroup()) {
-                SQLGroup group = newCache.findGroup(row.getEntity());
-                if (group == null) continue;
-                newCache.flatGroupPerms.get(group.getKey())
-                    .put(row.getPermission(), row.getValue());
-            } else {
-                UUID uuid = row.getUuid();
-                HashMap<String, Boolean> perms = newCache.flatPlayerPerms
-                    .get(uuid);
-                if (perms == null) {
-                    perms = new HashMap<>();
-                    newCache.flatPlayerPerms.put(uuid, perms);
-                }
-                perms.put(row.getPermission(), row.getValue());
-            }
-        }
+        cache.load(this.db);
+        loadNewCache(newCache);
+    }
+
+    protected void refreshPermissionsAsync() {
+        db.scheduleAsyncTask(() -> {
+                Cache newCache = new Cache();
+                newCache.load(this.db);
+                Bukkit.getScheduler().runTask(this, () -> {
+                        loadNewCache(newCache);
+                    });
+            });
+    }
+
+    /**
+     * Update the cache and setup all players.
+     * Must be called in the main thread!
+     */
+    private void loadNewCache(Cache newCache) {
         this.cache = newCache;
         for (Player player : getServer().getOnlinePlayers()) {
             setupPlayerPerms(player);
         }
     }
 
+    /**
+     * Fetch the version from the database and trigger a refresh if it
+     * doesn't match.
+     */
     private void testVersion() {
-        SQLVersion version = db.find(SQLVersion.class)
-            .eq("name", "Perm")
-            .findUnique();
-        if (version != null
-            && !version.getVersion().equals(cache.version.getVersion())) {
-            getLogger().info("Refreshing permissions from database");
-            refreshPermissions();
-        }
-    }
-
-    protected Map<String, Boolean> findPlayerPerms(final UUID uuid) {
-        Map<String, Boolean> perms = cache.deepPlayerPerms.get(uuid);
-        if (perms != null) return perms;
-        Set<String> assignedGroups = new HashSet<>();
-        for (SQLGroup group: cache.groups) {
-            if (cache.groupMembers.get(group.getKey()).contains(uuid)) {
-                assignedGroups.add(group.getKey());
-            }
-        }
-        if (assignedGroups.isEmpty()) assignedGroups.add(defaultGroup);
-        HashMap<String, Boolean> deepGroupPerms =
-            cache.deepGroupPerms.get(assignedGroups);
-        if (deepGroupPerms == null) {
-            deepGroupPerms = new HashMap<>();
-            List<String> groupList = new ArrayList<>();
-            for (String key: assignedGroups) {
-                deepGroupPerms.put("rank." + key, true);
-                groupList.addAll(cache.deepGroupParents.get(key));
-            }
-            for (String key : groupList) {
-                deepGroupPerms.put("group." + key, true);
-            }
-            Collections.sort(groupList, (a, b) ->
-                             Integer.compare(cache.groupPrios.get(a),
-                                             cache.groupPrios.get(b)));
-            for (String key: groupList) {
-                deepGroupPerms.putAll(cache.flatGroupPerms.get(key));
-            }
-            cache.deepGroupPerms.put(assignedGroups, deepGroupPerms);
-        }
-        perms = new HashMap<>(deepGroupPerms);
-        HashMap<String, Boolean> flatPlayerPerms =
-            cache.flatPlayerPerms.get(uuid);
-        if (flatPlayerPerms != null) perms.putAll(flatPlayerPerms);
-        cache.deepPlayerPerms.put(uuid, perms);
-        return perms;
-    }
-
-    protected Map<String, Boolean> findGroupPerms(final String groupName) {
-        final Map<String, Boolean> perms = new HashMap<>();
-        SQLGroup group = cache.findGroup(groupName);
-        if (group == null) return perms;
-        Map<String, Integer> groups = new HashMap<>();
-        while (group != null && !groups.containsKey(group.getKey())) {
-            groups.put(group.getKey(), group.getPriority());
-            if (group.getParent() == null) {
-                group = null;
-            } else {
-                group = cache.findGroup(group.getParent());
-            }
-        }
-        final Map<String, Integer> prios = new HashMap<>();
-        for (SQLPermission perm: cache.permissions) {
-            if (perm.getIsGroup()) {
-                if (groups.containsKey(perm.getEntity())) {
-                    Boolean oldPerm = perms.get(perm.getPermission());
-                    if (oldPerm == null) {
-                        perms.put(perm.getPermission(),
-                                  perm.getValue());
-                        prios.put(perm.getPermission(),
-                                  groups.get(perm.getEntity()));
-                    } else {
-                        Integer oldPrio = prios.get(perm.getPermission());
-                        if (oldPrio < groups.get(perm.getEntity())) {
-                            perms.put(perm.getPermission(),
-                                      perm.getValue());
-                            prios.put(perm.getPermission(),
-                                      groups.get(perm.getEntity()));
-                        }
-                    }
-                }
-            }
-        }
-        return perms;
+        db.find(SQLVersion.class).eq("name", "Perm").findUniqueAsync(version -> {
+                if (version == null) return;
+                if (version.getVersion().equals(cache.version.getVersion())) return;
+                getLogger().info("Refreshing permissions from database");
+                refreshPermissionsAsync();
+            });
     }
 
     protected void resetPlayerPerms(final Player player) {
-        for (PermissionAttachmentInfo info: player.getEffectivePermissions()) {
+        for (PermissionAttachmentInfo info : player.getEffectivePermissions()) {
             PermissionAttachment attach = info.getAttachment();
             if (attach != null && attach.getPlugin().equals(this)) {
                 attach.remove();
@@ -273,7 +147,7 @@ public final class PermPlugin extends JavaPlugin {
     }
 
     protected void setupPlayerPerms(final Player player) {
-        Map<String, Boolean> perms = findPlayerPerms(player.getUniqueId());
+        Map<String, Boolean> perms = cache.findPlayerPerms(player.getUniqueId());
         // This is a little trick I learned from zPermissions.  Do not
         // add an attachment as adding permissions to it is slow.
         // Instead, create a parent permission for the player
@@ -316,7 +190,7 @@ public final class PermPlugin extends JavaPlugin {
 
     public boolean playerHasPerm(final UUID uuid,
                                  final String perm) {
-        Map<String, Boolean> perms = findPlayerPerms(uuid);
+        Map<String, Boolean> perms = cache.findPlayerPerms(uuid);
         Boolean result = perms.get(perm);
         if (result != null) return result;
         return false;
@@ -324,7 +198,7 @@ public final class PermPlugin extends JavaPlugin {
 
     public boolean groupHasPerm(final String name,
                                 final String perm) {
-        Map<String, Boolean> perms = findGroupPerms(name);
+        Map<String, Boolean> perms = cache.findGroupPerms(name);
         Boolean result = perms.get(perm);
         if (result != null) return result;
         return false;
@@ -332,7 +206,7 @@ public final class PermPlugin extends JavaPlugin {
 
     public boolean playerInGroup(final UUID uuid,
                                  final String groupName) {
-        for (SQLMember mem: cache.members) {
+        for (SQLMember mem : cache.members) {
             if (!uuid.equals(mem.getMember())) continue;
             if (groupName.equals(mem.getGroup())) return true;
             SQLGroup group = cache.findGroup(mem.getGroup());
@@ -346,7 +220,7 @@ public final class PermPlugin extends JavaPlugin {
 
     public List<String> findPlayerGroups(final UUID uuid) {
         List<String> result = new ArrayList<>();
-        for (SQLMember mem: cache.members) {
+        for (SQLMember mem : cache.members) {
             if (!uuid.equals(mem.getMember())) continue;
             SQLGroup group = cache.findGroup(mem.getGroup());
             if (group != null) result.add(group.getKey());
@@ -356,7 +230,7 @@ public final class PermPlugin extends JavaPlugin {
 
     public List<UUID> findGroupMembers(final String groupName) {
         List<UUID> result = new ArrayList<>();
-        for (SQLMember mem: cache.members) {
+        for (SQLMember mem : cache.members) {
             if (!groupName.equals(mem.getGroup())) continue;
             result.add(mem.getMember());
         }
@@ -384,7 +258,7 @@ public final class PermPlugin extends JavaPlugin {
             db.save(row);
         }
         updateVersion();
-        refreshPermissions();
+        refreshPermissionsAsync();
         return true;
     }
 
@@ -409,7 +283,7 @@ public final class PermPlugin extends JavaPlugin {
             db.save(row);
         }
         updateVersion();
-        refreshPermissions();
+        refreshPermissionsAsync();
         return true;
     }
 
@@ -431,13 +305,13 @@ public final class PermPlugin extends JavaPlugin {
             db.delete(row);
         }
         updateVersion();
-        refreshPermissions();
+        refreshPermissionsAsync();
         return true;
     }
 
     public List<String> getGroups() {
         List<String> result = new ArrayList<>();
-        for (SQLGroup group: cache.groups) {
+        for (SQLGroup group : cache.groups) {
             result.add(group.getKey());
         }
         return result;

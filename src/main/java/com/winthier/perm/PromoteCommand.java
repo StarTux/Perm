@@ -66,7 +66,7 @@ public final class PromoteCommand implements TabExecutor {
             .delete();
         plugin.db.insert(new SQLMember(player.uuid, toGroup.getKey()));
         plugin.updateVersion();
-        plugin.refreshPermissions();
+        plugin.refreshPermissionsAsync();
         sender.sendMessage(Component.text(player.name + " promoted to " + toGroup.getDisplayName(), NamedTextColor.YELLOW));
         return true;
     }

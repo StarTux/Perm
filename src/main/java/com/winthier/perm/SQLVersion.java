@@ -22,4 +22,8 @@ public final class SQLVersion {
         this.name = name;
         this.version = new Date();
     }
+
+    public void setNow() {
+        version = new Date();
+    }
 }

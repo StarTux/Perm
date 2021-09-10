@@ -24,7 +24,7 @@ public final class ConnectHandler implements Listener {
         String payload = event.getMessage().getPayload();
         if (REFRESH.equals(payload)) {
             plugin.getLogger().info("Connect refresh signal received");
-            plugin.refreshPermissions();
+            plugin.refreshPermissionsAsync();
         }
     }
 

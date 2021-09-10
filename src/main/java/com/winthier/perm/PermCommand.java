@@ -35,15 +35,9 @@ public final class PermCommand implements TabExecutor {
                              final String[] args) {
         if (args.length == 0) return false;
         switch (args[0]) {
-        case "reload": {
-            if (args.length != 1) return false;
-            plugin.readConfiguration();
-            sender.sendMessage("Configuration reloaded.");
-            return true;
-        }
         case "refresh": {
             if (args.length != 1) return false;
-            plugin.refreshPermissions();
+            plugin.refreshPermissionsAsync();
             sender.sendMessage("Permissions refreshed.");
             return true;
         }
@@ -67,7 +61,7 @@ public final class PermCommand implements TabExecutor {
         String subcmd = args.length >= 2 ? args[1] : null;
         if ("get".equals(subcmd) && args.length == 3) {
             String perm = args[2];
-            Boolean value = plugin.findPlayerPerms(playerUuid).get(perm);
+            Boolean value = plugin.cache.findPlayerPerms(playerUuid).get(perm);
             sender.sendMessage(String.format("Setting for %s of %s: %s",
                                              playerName, perm, value));
             return true;
@@ -112,8 +106,7 @@ public final class PermCommand implements TabExecutor {
                                    + pattern + ":");
             }
             int count = 0;
-            for (Map.Entry<String, Boolean> entry
-                     : plugin.findPlayerPerms(playerUuid).entrySet()) {
+            for (Map.Entry<String, Boolean> entry : plugin.cache.findPlayerPerms(playerUuid).entrySet()) {
                 String perm = entry.getKey();
                 if (pattern == null || perm.contains(pattern)) {
                     sender.sendMessage("- " + perm + ": "
@@ -200,7 +193,7 @@ public final class PermCommand implements TabExecutor {
                 .delete();
             plugin.db.insert(new SQLMember(playerUuid, groupName));
             plugin.updateVersion();
-            plugin.refreshPermissions();
+            plugin.refreshPermissionsAsync();
             sender.sendMessage(playerName + " now in group " + groupName);
             return true;
         } else if ("replacegroup".equals(subcmd) && args.length == 4) {
@@ -233,7 +226,7 @@ public final class PermCommand implements TabExecutor {
                 .delete();
             plugin.db.insert(new SQLMember(playerUuid, toGroup.getKey()));
             plugin.updateVersion();
-            plugin.refreshPermissions();
+            plugin.refreshPermissionsAsync();
             sender.sendMessage(playerName + " removed from "
                                + fromGroup.getDisplayName()
                                + " and added to "
@@ -339,7 +332,7 @@ public final class PermCommand implements TabExecutor {
             return true;
         } else if ("get".equals(subcmd) && args.length == 3) {
             String perm = args[2];
-            Boolean value = plugin.findGroupPerms(groupName).get(perm);
+            Boolean value = plugin.cache.findGroupPerms(groupName).get(perm);
             sender.sendMessage(String
                                .format("Setting for group %s of %s: %s",
                                        groupName,
@@ -386,8 +379,7 @@ public final class PermCommand implements TabExecutor {
                                    + pattern + ":");
             }
             int count = 0;
-            for (Map.Entry<String, Boolean> entry
-                     : plugin.findGroupPerms(groupName).entrySet()) {
+            for (Map.Entry<String, Boolean> entry : plugin.cache.findGroupPerms(groupName).entrySet()) {
                 String perm = entry.getKey();
                 if (pattern == null || perm.contains(pattern)) {
                     sender.sendMessage("- " + perm + ": "
@@ -401,7 +393,7 @@ public final class PermCommand implements TabExecutor {
             sender.sendMessage("Members of group " + groupName + ":");
             int count = 0;
             List<Component> lines = new ArrayList<>();
-            for (UUID uuid: plugin.findGroupMembers(groupName)) {
+            for (UUID uuid : plugin.findGroupMembers(groupName)) {
                 String name = PlayerCache.nameForUuid(uuid);
                 TextComponent.Builder cb = Component.text();
                 cb.append(Component.text("- ", NamedTextColor.GRAY));
@@ -486,7 +478,7 @@ public final class PermCommand implements TabExecutor {
             sender.sendMessage("Set priority of group " + groupName
                                + " to " + prio);
             plugin.updateVersion();
-            plugin.refreshPermissions();
+            plugin.refreshPermissionsAsync();
             return true;
         } else if ("setparent".equals(subcmd) && args.length == 3) {
             String parentName = args[2];
@@ -502,7 +494,7 @@ public final class PermCommand implements TabExecutor {
                                + group.getDisplayName()
                                + " to " + parentGroup.getDisplayName());
             plugin.updateVersion();
-            plugin.refreshPermissions();
+            plugin.refreshPermissionsAsync();
             return true;
         } else if ("resetparent".equals(subcmd) && args.length == 2) {
             if (group.getParent() == null) {
@@ -514,7 +506,7 @@ public final class PermCommand implements TabExecutor {
             sender.sendMessage("Removed parent of group of "
                                + group.getDisplayName());
             plugin.updateVersion();
-            plugin.refreshPermissions();
+            plugin.refreshPermissionsAsync();
             return true;
         } else {
             sender.sendMessage("Usage");
@@ -596,9 +588,7 @@ public final class PermCommand implements TabExecutor {
         String cmd = args[0];
         String arg = args[args.length - 1];
         if (args.length == 1) {
-            return contains(arg,
-                            Stream.of("player", "group", "list",
-                                      "reload", "refresh"));
+            return contains(arg, Stream.of("player", "group", "list", "refresh"));
         }
         switch (cmd) {
         case "list":
