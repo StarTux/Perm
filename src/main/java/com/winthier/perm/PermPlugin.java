@@ -95,7 +95,7 @@ public final class PermPlugin extends JavaPlugin {
 
     protected void refreshPermissionsSync() {
         Cache newCache = new Cache();
-        cache.load(this.db);
+        newCache.load(this.db);
         loadNewCache(newCache);
     }
 
