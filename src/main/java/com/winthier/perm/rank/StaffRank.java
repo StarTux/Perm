@@ -1,4 +1,4 @@
-package com.winthier.perm;
+package com.winthier.perm.rank;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,9 +13,11 @@ public enum StaffRank implements Rank {
     public static final List<String> KEYS;
 
     public final String key;
+    public final String displayName;
 
     StaffRank() {
         this.key = name().toLowerCase();
+        this.displayName = name().substring(0, 1) + name().substring(1).toLowerCase();
     }
 
     static {

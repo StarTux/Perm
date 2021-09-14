@@ -1,5 +1,6 @@
 package com.winthier.perm;
 
+import com.winthier.perm.rank.PlayerRank;
 import com.winthier.playercache.PlayerCache;
 import java.util.Collections;
 import java.util.List;
@@ -23,51 +24,21 @@ public final class PromoteCommand implements TabExecutor {
             sender.sendMessage(Component.text("Player not found: " + args[0], NamedTextColor.RED));
             return true;
         }
-        final String fromGroupArg;
-        final String toGroupArg;
-        if (args.length == 2) {
-            toGroupArg = args[1];
-            int index = PlayerRank.KEYS.indexOf(args[1]);
-            if (index < 0) {
-                sender.sendMessage(Component.text("Rank not found: " + toGroupArg, NamedTextColor.RED));
-                return true;
-            }
-            if (index == 0) {
-                sender.sendMessage(Component.text("Cannot promote to: " + toGroupArg, NamedTextColor.RED));
-                return true;
-            }
-            fromGroupArg = PlayerRank.KEYS.get(index - 1);
-        } else {
-            fromGroupArg = "friendly";
-            toGroupArg = "member";
-        }
-        SQLGroup fromGroup = plugin.cache.findGroup(fromGroupArg);
-        if (fromGroup == null) {
-            sender.sendMessage(Component.text("Group not found: " + fromGroupArg, NamedTextColor.RED));
+        final PlayerRank playerRank = args.length >= 2
+            ? PlayerRank.ofKey(args[1])
+            : PlayerRank.MEMBER;
+        if (playerRank == null) {
+            sender.sendMessage(Component.text("Rank not found: " + args[1], NamedTextColor.RED));
             return true;
         }
-        SQLGroup toGroup = plugin.cache.findGroup(toGroupArg);
-        if (toGroup == null) {
-            sender.sendMessage(Component.text("Group not found: " + toGroupArg, NamedTextColor.RED));
+        if (playerRank.has(player.uuid)) {
+            sender.sendMessage(Component.text(player.name + " already has rank " + playerRank.displayName, NamedTextColor.RED));
+        }
+        if (!playerRank.promote(player.uuid)) {
+            sender.sendMessage(Component.text("Promotion failed!", NamedTextColor.RED));
             return true;
         }
-        List<String> groups = plugin.findPlayerGroups(player.uuid);
-        if (!groups.contains(fromGroup.getKey())) {
-            sender.sendMessage(Component.text(player.name + " not in group " + fromGroup.getDisplayName(), NamedTextColor.RED));
-            return true;
-        }
-        if (groups.contains(toGroup.getKey())) {
-            sender.sendMessage(Component.text(player.name + " already in group " + toGroup.getDisplayName(), NamedTextColor.RED));
-            return true;
-        }
-        plugin.db.find(SQLMember.class)
-            .eq("member", player.uuid)
-            .eq("group", fromGroup.getKey())
-            .delete();
-        plugin.db.insert(new SQLMember(player.uuid, toGroup.getKey()));
-        plugin.updateVersion();
-        plugin.refreshPermissionsAsync();
-        sender.sendMessage(Component.text(player.name + " promoted to " + toGroup.getDisplayName(), NamedTextColor.YELLOW));
+        sender.sendMessage(Component.text(player.name + " promoted to " + playerRank.displayName, NamedTextColor.YELLOW));
         return true;
     }
 

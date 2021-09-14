@@ -1,6 +1,11 @@
 package com.winthier.perm;
 
 import com.winthier.perm.event.PlayerPermissionUpdateEvent;
+import com.winthier.perm.rank.Rank;
+import com.winthier.perm.sql.SQLGroup;
+import com.winthier.perm.sql.SQLMember;
+import com.winthier.perm.sql.SQLPermission;
+import com.winthier.perm.sql.SQLVersion;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,8 +49,26 @@ public final class PermPlugin extends JavaPlugin {
                           SQLMember.class,
                           SQLPermission.class,
                           SQLVersion.class);
-        db.createAllTables();
-        getServer().getPluginManager().registerEvents(listener, this);
+        if (!db.createAllTables()) {
+            throw new IllegalStateException("Table creation failed!");
+        }
+        for (Rank rank : Rank.all()) {
+            String key = rank.getKey();
+            String groupPerm = "group." + rank.getKey();
+            String rankPerm = "rank." + rank.getKey();
+            Permission groupPermission = new Permission(groupPerm,
+                                                        "Member of " + rank.getDisplayName(),
+                                                        PermissionDefault.FALSE);
+            Permission rankPermission = new Permission(rankPerm,
+                                                       "Assigned member of " + rank.getDisplayName(),
+                                                       PermissionDefault.FALSE,
+                                                       Map.of(groupPerm, true));
+            Bukkit.getPluginManager().removePermission(groupPerm);
+            Bukkit.getPluginManager().removePermission(rankPerm);
+            Bukkit.getPluginManager().addPermission(groupPermission);
+            Bukkit.getPluginManager().addPermission(rankPermission);
+        }
+        Bukkit.getPluginManager().registerEvents(listener, this);
         getCommand("perm").setExecutor(permCommand);
         getCommand("promote").setExecutor(promoteCommand);
         refreshPermissionsSync();
@@ -160,7 +183,9 @@ public final class PermPlugin extends JavaPlugin {
         if (permission == null) {
             updateRequired = true;
             isInitialSetup = true;
-            permission = new Permission(motherPerm, PermissionDefault.FALSE, perms);
+            permission = new Permission(motherPerm,
+                                        "Mother permission of " + player.getName(),
+                                        PermissionDefault.FALSE, perms);
             getServer().getPluginManager().addPermission(permission);
         } else {
             isInitialSetup = false;

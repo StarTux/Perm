@@ -1,4 +1,4 @@
-package com.winthier.perm;
+package com.winthier.perm.sql;
 
 import java.util.Date;
 import javax.persistence.Column;

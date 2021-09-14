@@ -1,5 +1,8 @@
 package com.winthier.perm;
 
+import com.winthier.perm.sql.SQLGroup;
+import com.winthier.perm.sql.SQLMember;
+import com.winthier.perm.sql.SQLPermission;
 import com.winthier.playercache.PlayerCache;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -264,8 +267,7 @@ public final class PermCommand implements TabExecutor {
         SQLGroup group = plugin.cache.findGroup(groupName);
         if (group == null) {
             if (args.length == 2 && args[1].equals("create")) {
-                group = new SQLGroup(groupName.toLowerCase(),
-                                     0, groupName, null);
+                group = new SQLGroup(groupName.toLowerCase(), 0, groupName, null);
                 plugin.db.save(group);
                 plugin.cache.groups.add(group);
                 sender.sendMessage("Group created: " + groupName);

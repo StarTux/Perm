@@ -1,4 +1,4 @@
-package com.winthier.perm;
+package com.winthier.perm.sql;
 
 import java.util.UUID;
 import javax.persistence.Column;
@@ -19,7 +19,7 @@ public final class SQLMember {
 
     public SQLMember() { }
 
-    SQLMember(final UUID member, final String group) {
+    public SQLMember(final UUID member, final String group) {
         this.member = member;
         this.group = group;
     }

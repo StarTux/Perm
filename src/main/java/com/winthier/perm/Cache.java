@@ -1,5 +1,9 @@
 package com.winthier.perm;
 
+import com.winthier.perm.sql.SQLGroup;
+import com.winthier.perm.sql.SQLMember;
+import com.winthier.perm.sql.SQLPermission;
+import com.winthier.perm.sql.SQLVersion;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
 import java.util.Collections;
