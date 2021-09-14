@@ -1,14 +1,19 @@
 package com.winthier.perm;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import lombok.Getter;
 
-public enum PlayerRank {
+@Getter
+public enum PlayerRank implements Rank {
     GUEST,
     FRIENDLY,
-    MEMBER;
+    MEMBER,
+    CAVER,
+    SPELEOLOGIST,
+    EXPLORER;
     public static final List<String> KEYS;
 
     public final String key;
@@ -18,11 +23,9 @@ public enum PlayerRank {
     }
 
     static {
-        List<String> keys = new ArrayList<>();
-        for (PlayerRank it : PlayerRank.values()) {
-            keys.add(it.key);
-        }
-        KEYS = Collections.unmodifiableList(keys);
+        KEYS = Stream.of(StaffRank.values())
+            .map(s -> s.key)
+            .collect(Collectors.toUnmodifiableList());
     }
 
     public boolean promote(UUID uuid) {
