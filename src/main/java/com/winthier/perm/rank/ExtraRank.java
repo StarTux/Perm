@@ -16,7 +16,7 @@ import lombok.Getter;
 public enum ExtraRank implements Rank {
     BUILDER,
     DUTYMODE,
-    GOAT,
+    GOAT("GOAT"),
     STREAMER;
 
     public static final List<String> KEYS;
@@ -27,6 +27,11 @@ public enum ExtraRank implements Rank {
     ExtraRank() {
         this.key = name().toLowerCase();
         this.displayName = name().substring(0, 1) + name().substring(1).toLowerCase();
+    }
+
+    ExtraRank(final String displayName) {
+        this.key = name().toLowerCase();
+        this.displayName = displayName;
     }
 
     static {
