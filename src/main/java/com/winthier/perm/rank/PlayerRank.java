@@ -1,6 +1,7 @@
 package com.winthier.perm.rank;
 
 import com.winthier.perm.Perm;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -62,5 +63,15 @@ public enum PlayerRank implements Rank {
 
     public static PlayerRank ofKey(String key) {
         return KEY_MAP.get(key);
+    }
+
+    public static PlayerRank ofPlayer(UUID uuid) {
+        Collection<String> groups = Perm.getGroups(uuid);
+        if (groups.isEmpty()) return PlayerRank.GUEST;
+        for (String group : groups) {
+            PlayerRank it = KEY_MAP.get(group);
+            if (it != null) return it;
+        }
+        return PlayerRank.GUEST;
     }
 }

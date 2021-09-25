@@ -213,44 +213,26 @@ public final class PermPlugin extends JavaPlugin {
         }
     }
 
-    public boolean playerHasPerm(final UUID uuid,
-                                 final String perm) {
+    public boolean playerHasPerm(final UUID uuid, final String perm) {
         Map<String, Boolean> perms = cache.findPlayerPerms(uuid);
         Boolean result = perms.get(perm);
         if (result != null) return result;
         return false;
     }
 
-    public boolean groupHasPerm(final String name,
-                                final String perm) {
+    public boolean groupHasPerm(final String name, final String perm) {
         Map<String, Boolean> perms = cache.findGroupPerms(name);
         Boolean result = perms.get(perm);
         if (result != null) return result;
         return false;
     }
 
-    public boolean playerInGroup(final UUID uuid,
-                                 final String groupName) {
-        for (SQLMember mem : cache.members) {
-            if (!uuid.equals(mem.getMember())) continue;
-            if (groupName.equals(mem.getGroup())) return true;
-            SQLGroup group = cache.findGroup(mem.getGroup());
-            while (group != null && group.getParent() != null) {
-                if (groupName.equals(group.getParent())) return true;
-                group = cache.findGroup(group.getParent());
-            }
-        }
-        return false;
+    public boolean playerInGroup(final UUID uuid, final String groupName) {
+        return cache.findDeepPlayerGroups(uuid).contains(groupName);
     }
 
     public List<String> findPlayerGroups(final UUID uuid) {
-        List<String> result = new ArrayList<>();
-        for (SQLMember mem : cache.members) {
-            if (!uuid.equals(mem.getMember())) continue;
-            SQLGroup group = cache.findGroup(mem.getGroup());
-            if (group != null) result.add(group.getKey());
-        }
-        return result;
+        return new ArrayList<>(cache.findAssignedGroups(uuid));
     }
 
     public List<UUID> findGroupMembers(final String groupName) {
@@ -262,9 +244,7 @@ public final class PermPlugin extends JavaPlugin {
         return result;
     }
 
-    public boolean setPlayerPerm(final UUID uuid,
-                                 final String perm,
-                                 final Boolean value) {
+    public boolean setPlayerPerm(final UUID uuid, final String perm, final Boolean value) {
         SQLPermission row = db.find(SQLPermission.class)
             .eq("entity", uuid.toString())
             .eq("isGroup", false)

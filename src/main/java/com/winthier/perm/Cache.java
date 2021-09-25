@@ -14,13 +14,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-final class Cache {
+public final class Cache {
     final List<SQLGroup> groups = new ArrayList<>();
     final List<SQLMember> members = new ArrayList<>();
     final List<SQLPermission> permissions = new ArrayList<>();
     SQLVersion version;
 
-    SQLGroup findGroup(final String name) {
+    public SQLGroup findGroup(final String name) {
         for (SQLGroup group : groups) {
             if (name.equals(group.getKey())) return group;
         }
@@ -41,6 +41,8 @@ final class Cache {
     final HashMap<Set<String>, HashMap<String, Boolean>> deepGroupPerms = new HashMap<>();
     // Map UUID to permissions. This is populated lazily and may be flushed any time.
     final HashMap<UUID, Map<String, Boolean>> deepPlayerPerms = new HashMap<>();
+    final HashMap<UUID, Set<String>> flatPlayerGroups = new HashMap<>();
+    final HashMap<UUID, Set<String>> deepPlayerGroups = new HashMap<>();
 
     protected void load(SQLDatabase db) {
         this.groups.addAll(db.find(SQLGroup.class).findList());
@@ -91,13 +93,44 @@ final class Cache {
     protected Map<String, Boolean> findPlayerPerms(final UUID uuid) {
         Map<String, Boolean> perms = deepPlayerPerms.get(uuid);
         if (perms != null) return perms;
-        Set<String> assignedGroups = new HashSet<>();
-        for (SQLGroup group : groups) {
-            if (groupMembers.get(group.getKey()).contains(uuid)) {
-                assignedGroups.add(group.getKey());
+        Set<String> assignedGroups = findAssignedGroups(uuid);
+        Map<String, Boolean> groupPerms = findGroupPerms(assignedGroups);
+        perms = new HashMap<>(groupPerms);
+        HashMap<String, Boolean> playerPerms = flatPlayerPerms.get(uuid);
+        if (playerPerms != null) perms.putAll(playerPerms);
+        deepPlayerPerms.put(uuid, perms);
+        return perms;
+    }
+
+    public Set<String> findDeepPlayerGroups(final UUID uuid) {
+        Set<String> playerGroups = deepPlayerGroups.get(uuid);
+        if (playerGroups == null) {
+            playerGroups = new HashSet<>();
+            Set<String> assignedGroups = findAssignedGroups(uuid);
+            for (String key : assignedGroups) {
+                playerGroups.addAll(deepGroupParents.get(key));
             }
+            deepPlayerGroups.put(uuid, playerGroups);
         }
-        if (assignedGroups.isEmpty()) assignedGroups.add(PermPlugin.DEFAULT_GROUP);
+        return playerGroups;
+    }
+
+    protected Set<String> findAssignedGroups(final UUID uuid) {
+        Set<String> assignedGroups = flatPlayerGroups.get(uuid);
+        if (assignedGroups == null) {
+            assignedGroups = new HashSet<>();
+            for (SQLGroup group : groups) {
+                if (groupMembers.get(group.getKey()).contains(uuid)) {
+                    assignedGroups.add(group.getKey());
+                }
+            }
+            if (assignedGroups.isEmpty()) assignedGroups.add(PermPlugin.DEFAULT_GROUP);
+            flatPlayerGroups.put(uuid, assignedGroups);
+        }
+        return assignedGroups;
+    }
+
+    protected Map<String, Boolean> findGroupPerms(Set<String> assignedGroups) {
         HashMap<String, Boolean> groupPerms = deepGroupPerms.get(assignedGroups);
         if (groupPerms == null) {
             groupPerms = new HashMap<>();
@@ -116,11 +149,7 @@ final class Cache {
             }
             deepGroupPerms.put(assignedGroups, groupPerms);
         }
-        perms = new HashMap<>(groupPerms);
-        HashMap<String, Boolean> playerPerms = flatPlayerPerms.get(uuid);
-        if (playerPerms != null) perms.putAll(playerPerms);
-        deepPlayerPerms.put(uuid, perms);
-        return perms;
+        return groupPerms;
     }
 
     protected Map<String, Boolean> findGroupPerms(final String groupName) {

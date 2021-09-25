@@ -1,5 +1,8 @@
 package com.winthier.perm;
 
+import com.winthier.perm.rank.ExtraRank;
+import com.winthier.perm.rank.PlayerRank;
+import com.winthier.perm.rank.StaffRank;
 import com.winthier.perm.sql.SQLGroup;
 import com.winthier.perm.sql.SQLMember;
 import com.winthier.perm.sql.SQLPermission;
@@ -9,11 +12,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -235,6 +240,16 @@ public final class PermCommand implements TabExecutor {
                                + " and added to "
                                + toGroup.getDisplayName());
             return true;
+        } else if ("info".equals(subcmd) && args.length == 2) {
+            PlayerRank playerRank = PlayerRank.ofPlayer(playerUuid);
+            StaffRank staffRank = StaffRank.ofPlayer(playerUuid);
+            Set<ExtraRank> extraRanks = ExtraRank.ofPlayer(playerUuid);
+            sender.sendMessage(Component.text("Ranks of " + playerName + ":"
+                                              + " player=" + playerRank
+                                              + " staff=" + staffRank
+                                              + " extra=" + extraRanks,
+                                              NamedTextColor.YELLOW));
+            return true;
         } else {
             sender.sendMessage("Usage");
             sender.sendMessage("/perm player <name> get <perm>"
@@ -414,7 +429,7 @@ public final class PermCommand implements TabExecutor {
                 count += 1;
             }
             lines.add(Component.text("Total " + count, NamedTextColor.YELLOW));
-            sender.sendMessage(Component.join(Component.newline(), lines));
+            sender.sendMessage(Component.join(JoinConfiguration.separator(Component.newline()), lines));
             return true;
         } else if ("set".equals(subcmd)
                    && (args.length == 3 || args.length == 4)) {
@@ -548,7 +563,7 @@ public final class PermCommand implements TabExecutor {
             List<SQLGroup> groups = new ArrayList<>(plugin.cache.groups);
             Collections.sort(groups, (a, b) -> Integer.compare(a.getPriority(), b.getPriority()));
             for (SQLGroup group : groups) {
-                sender.sendMessage(TextComponent.ofChildren(new Component[] {
+                sender.sendMessage(Component.join(JoinConfiguration.noSeparators(), new Component[] {
                             Component.text("\u2022", NamedTextColor.GRAY),
                             Component.text(" " + group.getPriority(), NamedTextColor.WHITE),
                             Component.text(" " + group.getKey(), NamedTextColor.YELLOW),

@@ -1,9 +1,7 @@
 package com.winthier.perm;
 
 import com.winthier.perm.sql.SQLMember;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -18,19 +16,19 @@ public final class Perm {
         return PermPlugin.instance.playerInGroup(uuid, groupName);
     }
 
+    /**
+     * Find assigned groups!
+     */
     public static Collection<String> getGroups(UUID uuid) {
-        return PermPlugin.instance.findPlayerGroups(uuid);
+        return PermPlugin.instance.cache.findAssignedGroups(uuid);
     }
 
-    public static Collection<String> getPerms(UUID uuid) {
-        Map<String, Boolean> map = PermPlugin.instance.cache.findPlayerPerms(uuid);
-        List<String> result = new ArrayList<>(map.size());
-        for (Map.Entry<String, Boolean> entry : map.entrySet()) {
-            if (entry.getValue() == Boolean.TRUE) {
-                result.add(entry.getKey());
-            }
-        }
-        return result;
+    public static Collection<String> getAllGroups(UUID uuid) {
+        return PermPlugin.instance.cache.findDeepPlayerGroups(uuid);
+    }
+
+    public static Map<String, Boolean> getPerms(UUID uuid) {
+        return PermPlugin.instance.cache.findPlayerPerms(uuid);
     }
 
     public static boolean removeGroup(UUID uuid, String group) {
