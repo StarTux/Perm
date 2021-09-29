@@ -15,7 +15,6 @@ public enum PlayerRank implements Rank {
     GUEST,
     FRIENDLY,
     MEMBER,
-    CAVER,
     SPELEOLOGIST,
     EXPLORER;
     public static final List<String> KEYS;
