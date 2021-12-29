@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.JoinConfiguration;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -412,20 +411,18 @@ public final class PermCommand implements TabExecutor {
             List<Component> lines = new ArrayList<>();
             for (UUID uuid : plugin.findGroupMembers(groupName)) {
                 String name = PlayerCache.nameForUuid(uuid);
-                TextComponent.Builder cb = Component.text();
-                cb.append(Component.text("- ", NamedTextColor.GRAY));
-                cb.append(Component.text(name, NamedTextColor.GRAY));
-                suggest(cb, "/perm player " + name + " ");
-                cb.append(Component.space());
-                cb.append(Component.text("[-]", NamedTextColor.RED));
-                suggest(cb, "/perm player " + name + " removegroup " + group.getKey());
-                cb.append(Component.space());
-                cb.append(Component.text("[+]", NamedTextColor.BLUE));
-                suggest(cb, "/perm player " + name + " addgroup ");
-                cb.append(Component.space());
-                cb.append(Component.text("[~]", NamedTextColor.GOLD));
-                suggest(cb, "/perm player " + name + " replacegroup " + group.getKey() + " ");
-                lines.add(cb.build());
+                lines.add(Component.join(JoinConfiguration.noSeparators(), new Component[] {
+                            Component.text("- ", NamedTextColor.GRAY),
+                            suggest(Component.text("[-]", NamedTextColor.RED),
+                                    "/perm player " + name + " removegroup " + group.getKey()),
+                            suggest(Component.text("[+]", NamedTextColor.BLUE),
+                                    "/perm player " + name + " addgroup "),
+                            suggest(Component.text("[~]", NamedTextColor.GOLD),
+                                    "/perm player " + name + " replacegroup " + group.getKey() + " "),
+                            Component.space(),
+                            suggest(Component.text(name, NamedTextColor.GRAY),
+                                    "/perm player " + name + " "),
+                        }));
                 count += 1;
             }
             lines.add(Component.text("Total " + count, NamedTextColor.YELLOW));
@@ -704,11 +701,12 @@ public final class PermCommand implements TabExecutor {
         return Arrays.copyOfRange(args, 1, args.length);
     }
 
-    private static void suggest(TextComponent.Builder cb, String cmd) {
-        cb.clickEvent(ClickEvent.suggestCommand(cmd));
+    private static Component suggest(Component component, String cmd) {
         Component tooltip = Component.text().content(cmd).color(NamedTextColor.GRAY)
             .decoration(TextDecoration.ITALIC, false).build();
-        cb.hoverEvent(HoverEvent.showText(tooltip));
+        return component
+            .clickEvent(ClickEvent.suggestCommand(cmd))
+            .hoverEvent(HoverEvent.showText(tooltip));
     }
 
     private static boolean in(String key, String... haystack) {
