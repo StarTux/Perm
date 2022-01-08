@@ -51,6 +51,7 @@ public final class PermCommand implements TabExecutor {
         case "player": return playerCommand(sender, argl(args));
         case "group": return groupCommand(sender, argl(args));
         case "list": return listCommand(sender, argl(args));
+        case "local": return localCommand(sender, argl(args));
         default:
             return false;
         }
@@ -590,6 +591,12 @@ public final class PermCommand implements TabExecutor {
             sender.sendMessage("/perm list playerperms"
                                + " - List assigned player permissions");
         }
+        return true;
+    }
+
+    protected boolean localCommand(CommandSender sender, String[] args) {
+        if (args.length != 0) return false;
+        sender.sendMessage("Local permissions: " + plugin.localPermissionsCache);
         return true;
     }
 

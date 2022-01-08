@@ -7,6 +7,7 @@ import com.winthier.perm.sql.SQLMember;
 import com.winthier.perm.sql.SQLPermission;
 import com.winthier.perm.sql.SQLVersion;
 import com.winthier.sql.SQLDatabase;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +15,8 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
 import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
 import org.bukkit.permissions.PermissionAttachment;
@@ -35,6 +38,8 @@ public final class PermPlugin extends JavaPlugin {
     protected EventListener listener = new EventListener(this);
     protected ConnectHandler connectHandler;
     @Getter protected static PermPlugin instance;
+    protected File localPermissionsFile;
+    protected List<SQLPermission> localPermissionsCache;
 
     @Override
     public void onLoad() {
@@ -71,6 +76,7 @@ public final class PermPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(listener, this);
         getCommand("perm").setExecutor(permCommand);
         getCommand("promote").setExecutor(promoteCommand);
+        localPermissionsFile = new File(getDataFolder(), "local.yml");
         refreshPermissionsSync();
         tryToLoadVault();
         if (Bukkit.getPluginManager().isPluginEnabled("Connect")) {
@@ -116,16 +122,45 @@ public final class PermPlugin extends JavaPlugin {
         }
     }
 
+    protected List<SQLPermission> loadLocalPermissions() {
+        if (!localPermissionsFile.exists()) {
+            localPermissionsCache = List.of();
+            return List.of();
+        }
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(localPermissionsFile);
+        List<SQLPermission> list = new ArrayList<>();
+        for (Map<?, ?> map : yaml.getMapList("permissions")) {
+            ConfigurationSection section = yaml.createSection("tmp", map);
+            String entity = section.getString("entity");
+            boolean isGroup = section.getBoolean("isGroup");
+            String permission = section.getString("permission");
+            boolean value = section.getBoolean("value");
+            if (entity == null || permission == null) {
+                getLogger().warning(localPermissionsFile + ": Invalid permission: "
+                                    + map);
+                continue;
+            }
+            try {
+                UUID.fromString(entity);
+            } catch (IllegalArgumentException iae) {
+                isGroup = true;
+            }
+            list.add(new SQLPermission(entity, isGroup, permission, value));
+        }
+        localPermissionsCache = list;
+        return list;
+    }
+
     protected void refreshPermissionsSync() {
         Cache newCache = new Cache();
-        newCache.load(this.db);
+        newCache.load(this.db, loadLocalPermissions());
         loadNewCache(newCache);
     }
 
     protected void refreshPermissionsAsync() {
         db.scheduleAsyncTask(() -> {
                 Cache newCache = new Cache();
-                newCache.load(this.db);
+                newCache.load(this.db, loadLocalPermissions());
                 Bukkit.getScheduler().runTask(this, () -> {
                         loadNewCache(newCache);
                     });

@@ -44,10 +44,11 @@ public final class Cache {
     final HashMap<UUID, Set<String>> flatPlayerGroups = new HashMap<>();
     final HashMap<UUID, Set<String>> deepPlayerGroups = new HashMap<>();
 
-    protected void load(SQLDatabase db) {
+    protected void load(SQLDatabase db, List<SQLPermission> localPermissions) {
         this.groups.addAll(db.find(SQLGroup.class).findList());
         this.members.addAll(db.find(SQLMember.class).findList());
         this.permissions.addAll(db.find(SQLPermission.class).findList());
+        this.permissions.addAll(localPermissions);
         this.version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
         if (version == null) version = new SQLVersion("Perm");
         deepGroupParents.put(PermPlugin.DEFAULT_GROUP, new ArrayList<>());
