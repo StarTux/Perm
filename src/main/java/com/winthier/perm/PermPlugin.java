@@ -40,6 +40,7 @@ public final class PermPlugin extends JavaPlugin {
     @Getter protected static PermPlugin instance;
     protected File localPermissionsFile;
     protected List<SQLPermission> localPermissionsCache;
+    protected final CorePerm corePerm = new CorePerm();
 
     @Override
     public void onLoad() {
@@ -49,6 +50,7 @@ public final class PermPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        corePerm.register();
         db = new SQLDatabase(this);
         db.registerTables(SQLGroup.class,
                           SQLMember.class,
@@ -90,6 +92,7 @@ public final class PermPlugin extends JavaPlugin {
         for (Player player : getServer().getOnlinePlayers()) {
             resetPlayerPerms(player);
         }
+        corePerm.unregister();
     }
 
     protected void tryToLoadVault() {
