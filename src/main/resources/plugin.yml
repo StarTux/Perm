@@ -2,7 +2,7 @@ name: Perm
 description: Permission plugin
 author: StarTux
 version: 0.1
-api-version: 1.17
+api-version: 1.18
 website: http://cavetale.com
 main: com.winthier.perm.PermPlugin
 depend: [Core, SQL, PlayerCache]

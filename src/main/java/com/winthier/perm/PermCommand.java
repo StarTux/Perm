@@ -18,11 +18,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.JoinConfiguration;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -30,6 +27,15 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.permissions.Permission;
+import static net.kyori.adventure.text.Component.empty;
+import static net.kyori.adventure.text.Component.join;
+import static net.kyori.adventure.text.Component.newline;
+import static net.kyori.adventure.text.Component.space;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.JoinConfiguration.noSeparators;
+import static net.kyori.adventure.text.JoinConfiguration.separator;
+import static net.kyori.adventure.text.format.NamedTextColor.*;
+import static net.kyori.adventure.text.format.TextDecoration.*;
 
 @RequiredArgsConstructor
 public final class PermCommand implements TabExecutor {
@@ -57,7 +63,15 @@ public final class PermCommand implements TabExecutor {
         }
     }
 
-    boolean playerCommand(CommandSender sender, String[] args) {
+    private static void list(CommandSender sender, String perm, boolean value) {
+        if (value) {
+            sender.sendMessage(text("+ " + perm, GREEN));
+        } else {
+            sender.sendMessage(text("- " + perm, RED));
+        }
+    }
+
+    private boolean playerCommand(CommandSender sender, String[] args) {
         if (args.length < 1) return false;
         String playerName = args[0];
         UUID playerUuid = PlayerCache.uuidForName(playerName);
@@ -73,8 +87,7 @@ public final class PermCommand implements TabExecutor {
             sender.sendMessage(String.format("Setting for %s of %s: %s",
                                              playerName, perm, value));
             return true;
-        } else if ("show".equals(subcmd)
-                   && (args.length == 2 || args.length == 3)) {
+        } else if ("show".equals(subcmd) && (args.length == 2 || args.length == 3)) {
             String pattern = args.length >= 3
                 ? args[2]
                 : null;
@@ -91,17 +104,14 @@ public final class PermCommand implements TabExecutor {
             for (SQLPermission permission : plugin.cache.permissions) {
                 if (permission.getIsGroup()) continue;
                 if (!entityName.equals(permission.getEntity())) continue;
-                if (pattern == null
-                    || permission.getPermission().contains(pattern)) {
-                    sender.sendMessage("- " + permission.getPermission()
-                                       + ": " + permission.getValue());
+                if (pattern == null || permission.getPermission().contains(pattern)) {
+                    list(sender, permission.getPermission(), permission.getValue());
                     count += 1;
                 }
             }
             sender.sendMessage("Total " + count);
             return true;
-        } else if ("dump".equals(subcmd)
-                   && (args.length == 2 || args.length == 3)) {
+        } else if ("dump".equals(subcmd) && (args.length == 2 || args.length == 3)) {
             String pattern = args.length >= 3
                 ? args[2]
                 : null;
@@ -117,8 +127,7 @@ public final class PermCommand implements TabExecutor {
             for (Map.Entry<String, Boolean> entry : plugin.cache.findPlayerPerms(playerUuid).entrySet()) {
                 String perm = entry.getKey();
                 if (pattern == null || perm.contains(pattern)) {
-                    sender.sendMessage("- " + perm + ": "
-                                       + entry.getValue());
+                    list(sender, entry.getKey(), entry.getValue());
                     count += 1;
                 }
             }
@@ -244,11 +253,11 @@ public final class PermCommand implements TabExecutor {
             PlayerRank playerRank = PlayerRank.ofPlayer(playerUuid);
             StaffRank staffRank = StaffRank.ofPlayer(playerUuid);
             Set<ExtraRank> extraRanks = ExtraRank.ofPlayer(playerUuid);
-            sender.sendMessage(Component.text("Ranks of " + playerName + ":"
-                                              + " player=" + playerRank
-                                              + " staff=" + staffRank
-                                              + " extra=" + extraRanks,
-                                              NamedTextColor.YELLOW));
+            sender.sendMessage(text("Ranks of " + playerName + ":"
+                                    + " player=" + playerRank
+                                    + " staff=" + staffRank
+                                    + " extra=" + extraRanks,
+                                    YELLOW));
             return true;
         } else {
             sender.sendMessage("Usage");
@@ -276,7 +285,7 @@ public final class PermCommand implements TabExecutor {
         }
     }
 
-    boolean groupCommand(CommandSender sender, String[] args) {
+    private boolean groupCommand(CommandSender sender, String[] args) {
         if (args.length < 1) return false;
         String groupName = args[0];
         SQLGroup group = plugin.cache.findGroup(groupName);
@@ -356,8 +365,7 @@ public final class PermCommand implements TabExecutor {
                                        perm,
                                        value));
             return true;
-        } else if ("show".equals(subcmd)
-                   && (args.length == 2 || args.length == 3)) {
+        } else if ("show".equals(subcmd) && (args.length == 2 || args.length == 3)) {
             String pattern = args.length >= 3
                 ? args[2]
                 : null;
@@ -373,17 +381,14 @@ public final class PermCommand implements TabExecutor {
             for (SQLPermission permission : plugin.cache.permissions) {
                 if (!permission.getIsGroup()) continue;
                 if (!groupName.equals(permission.getEntity())) continue;
-                if (pattern == null
-                    || permission.getPermission().contains(pattern)) {
-                    sender.sendMessage("- " + permission.getPermission()
-                                       + ": " + permission.getValue());
+                if (pattern == null || permission.getPermission().contains(pattern)) {
+                    list(sender, permission.getPermission(), permission.getValue());
                     count += 1;
                 }
             }
             sender.sendMessage("Total " + count);
             return true;
-        } else if ("dump".equals(subcmd)
-                   && (args.length == 2 || args.length == 3)) {
+        } else if ("dump".equals(subcmd) && (args.length == 2 || args.length == 3)) {
             String pattern = args.length >= 3
                 ? args[2]
                 : null;
@@ -399,8 +404,7 @@ public final class PermCommand implements TabExecutor {
             for (Map.Entry<String, Boolean> entry : plugin.cache.findGroupPerms(groupName).entrySet()) {
                 String perm = entry.getKey();
                 if (pattern == null || perm.contains(pattern)) {
-                    sender.sendMessage("- " + perm + ": "
-                                       + entry.getValue());
+                    list(sender, entry.getKey(), entry.getValue());
                     count += 1;
                 }
             }
@@ -412,22 +416,22 @@ public final class PermCommand implements TabExecutor {
             List<Component> lines = new ArrayList<>();
             for (UUID uuid : plugin.findGroupMembers(groupName)) {
                 String name = PlayerCache.nameForUuid(uuid);
-                lines.add(Component.join(JoinConfiguration.noSeparators(), new Component[] {
-                            Component.text("- ", NamedTextColor.GRAY),
-                            suggest(Component.text("[-]", NamedTextColor.RED),
+                lines.add(join(noSeparators(), new Component[] {
+                            text("- ", GRAY),
+                            suggest(text("[-]", RED),
                                     "/perm player " + name + " removegroup " + group.getKey()),
-                            suggest(Component.text("[+]", NamedTextColor.BLUE),
+                            suggest(text("[+]", BLUE),
                                     "/perm player " + name + " addgroup "),
-                            suggest(Component.text("[~]", NamedTextColor.GOLD),
+                            suggest(text("[~]", GOLD),
                                     "/perm player " + name + " replacegroup " + group.getKey() + " "),
-                            Component.space(),
-                            suggest(Component.text(name, NamedTextColor.GRAY),
+                            space(),
+                            suggest(text(name, GRAY),
                                     "/perm player " + name + " "),
                         }));
                 count += 1;
             }
-            lines.add(Component.text("Total " + count, NamedTextColor.YELLOW));
-            sender.sendMessage(Component.join(JoinConfiguration.separator(Component.newline()), lines));
+            lines.add(text("Total " + count, YELLOW));
+            sender.sendMessage(join(separator(newline()), lines));
             return true;
         } else if ("set".equals(subcmd)
                    && (args.length == 3 || args.length == 4)) {
@@ -551,24 +555,24 @@ public final class PermCommand implements TabExecutor {
         }
     }
 
-    boolean listCommand(CommandSender sender, String[] args) {
+    private boolean listCommand(CommandSender sender, String[] args) {
         if (args.length > 1) return false;
         String subcmd = args.length >= 1
             ? args[0]
             : null;
         if ("groups".equals(subcmd)) {
-            sender.sendMessage(Component.text("Total " + plugin.cache.groups.size() + " groups:", NamedTextColor.YELLOW));
+            sender.sendMessage(text("Total " + plugin.cache.groups.size() + " groups:", YELLOW));
             List<SQLGroup> groups = new ArrayList<>(plugin.cache.groups);
             Collections.sort(groups, (a, b) -> Integer.compare(a.getPriority(), b.getPriority()));
             for (SQLGroup group : groups) {
-                sender.sendMessage(Component.join(JoinConfiguration.noSeparators(), new Component[] {
-                            Component.text("\u2022", NamedTextColor.GRAY),
-                            Component.text(" " + group.getPriority(), NamedTextColor.WHITE),
-                            Component.text(" " + group.getKey(), NamedTextColor.YELLOW),
-                            Component.text(" " + group.getDisplayName(), NamedTextColor.GRAY),
+                sender.sendMessage(join(noSeparators(), new Component[] {
+                            text("\u2022", GRAY),
+                            text(" " + group.getPriority(), WHITE),
+                            text(" " + group.getKey(), YELLOW),
+                            text(" " + group.getDisplayName(), GRAY),
                             (group.getParent() != null
-                             ? Component.text(" \u2192" + group.getParent(), NamedTextColor.YELLOW)
-                             : Component.empty()),
+                             ? text(" \u2192" + group.getParent(), YELLOW)
+                             : empty()),
                         }));
             }
         } else if ("playerperms".equals(subcmd)) {
@@ -709,8 +713,8 @@ public final class PermCommand implements TabExecutor {
     }
 
     private static Component suggest(Component component, String cmd) {
-        Component tooltip = Component.text().content(cmd).color(NamedTextColor.GRAY)
-            .decoration(TextDecoration.ITALIC, false).build();
+        Component tooltip = text().content(cmd).color(GRAY)
+            .decoration(ITALIC, false).build();
         return component
             .clickEvent(ClickEvent.suggestCommand(cmd))
             .hoverEvent(HoverEvent.showText(tooltip));
