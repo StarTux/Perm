@@ -1,5 +1,6 @@
 package com.winthier.perm.sql;
 
+import com.winthier.sql.SQLRow;
 import java.util.Date;
 import javax.persistence.Column;
 import javax.persistence.Id;
@@ -11,7 +12,7 @@ import lombok.Data;
 @Table(name = "versions",
        uniqueConstraints =
        @UniqueConstraint(columnNames = { "name" }))
-public final class SQLVersion {
+public final class SQLVersion implements SQLRow {
     @Id private Integer id;
     @Column(nullable = false, length = 16) private String name;
     @Column(nullable = false) private Date version;

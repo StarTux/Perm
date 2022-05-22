@@ -1,5 +1,6 @@
 package com.winthier.perm.sql;
 
+import com.winthier.sql.SQLRow;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Id;
@@ -11,7 +12,7 @@ import lombok.NonNull;
 @Data
 @Table(name = "permissions",
        uniqueConstraints = @UniqueConstraint(columnNames = {"entity", "permission"}))
-public final class SQLPermission {
+public final class SQLPermission implements SQLRow {
     @Id
     private Integer id;
     @Column(nullable = false, length = 40)

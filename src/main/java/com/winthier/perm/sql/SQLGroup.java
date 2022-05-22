@@ -1,5 +1,6 @@
 package com.winthier.perm.sql;
 
+import com.winthier.sql.SQLRow;
 import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.Table;
@@ -10,7 +11,7 @@ import lombok.NonNull;
 @Data
 @Table(name = "groups",
        uniqueConstraints = @UniqueConstraint(columnNames = {"key"}))
-public final class SQLGroup {
+public final class SQLGroup implements SQLRow {
     @Id private Integer id;
     // Always lower case!
     @Column(nullable = false, length = 16)

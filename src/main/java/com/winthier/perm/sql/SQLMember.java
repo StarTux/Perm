@@ -1,5 +1,6 @@
 package com.winthier.perm.sql;
 
+import com.winthier.sql.SQLRow;
 import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.Id;
@@ -12,7 +13,7 @@ import lombok.Data;
        uniqueConstraints =
        @UniqueConstraint(columnNames = { "member",
                                          "group" }))
-public final class SQLMember {
+public final class SQLMember implements SQLRow {
     @Id private Integer id;
     @Column(nullable = false) private UUID member;
     @Column(nullable = false, length = 16) private String group;
