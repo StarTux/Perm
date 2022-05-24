@@ -40,7 +40,7 @@ public final class PermPlugin extends JavaPlugin {
     @Getter protected static PermPlugin instance;
     protected File localPermissionsFile;
     protected List<SQLPermission> localPermissionsCache;
-    protected final CorePerm corePerm = new CorePerm();
+    protected final CorePerm corePerm = new CorePerm(this);
 
     @Override
     public void onLoad() {
