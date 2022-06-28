@@ -85,4 +85,19 @@ public final class CorePerm implements Perm {
         plugin.refreshPermissionsAsync();
         return true;
     }
+
+    @Override
+    public int getLevel(UUID uuid) {
+        return plugin.getPlayerLevel(uuid);
+    }
+
+    @Override
+    public int getLevelProgress(UUID uuid) {
+        return plugin.getPlayerLevelProgress(uuid);
+    }
+
+    @Override
+    public void addLevelProgress(UUID uuid) {
+        plugin.addPlayerLevelProgress(uuid);
+    }
 }

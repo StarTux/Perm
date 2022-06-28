@@ -8,7 +8,7 @@ author: StarTux
 description: Permission plugin
 website: https://cavetale.com
 
-depend: [Core, SQL, PlayerCache]
+depend: [Core, SQL, PlayerCache, Mytems]
 softdepend: [Vault]
 
 commands:
@@ -21,11 +21,17 @@ commands:
       /perm group <group> ... - Group settings
       /perm refresh - Refresh permission cache
       /perm list <what> ... - List things
+      /perm level ... - Level commands
 
   promote:
     description: Promote a player
     permission: perm.promote
     usage: /promote <player> [rank]
+
+  tier:
+    description: View tier list
+    permission: perm.tier
+    usage: /tier
 
 permissions:
 
@@ -35,4 +41,8 @@ permissions:
 
   perm.promote:
     description: Use /promote
+    default: op
+
+  perm.tier:
+    description: Use /tier
     default: op

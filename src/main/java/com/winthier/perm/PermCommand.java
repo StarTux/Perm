@@ -1,12 +1,24 @@
 package com.winthier.perm;
 
+import com.cavetale.core.command.CommandArgCompleter;
+import com.cavetale.core.command.CommandContext;
+import com.cavetale.core.command.CommandNode;
+import com.cavetale.core.command.CommandWarn;
+import com.cavetale.mytems.item.font.Glyph;
 import com.winthier.perm.rank.ExtraRank;
 import com.winthier.perm.rank.PlayerRank;
 import com.winthier.perm.rank.StaffRank;
 import com.winthier.perm.sql.SQLGroup;
+import com.winthier.perm.sql.SQLLevel;
 import com.winthier.perm.sql.SQLMember;
 import com.winthier.perm.sql.SQLPermission;
 import com.winthier.playercache.PlayerCache;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,7 +28,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.RequiredArgsConstructor;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
@@ -37,9 +48,30 @@ import static net.kyori.adventure.text.JoinConfiguration.separator;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 import static net.kyori.adventure.text.format.TextDecoration.*;
 
-@RequiredArgsConstructor
 public final class PermCommand implements TabExecutor {
     private final PermPlugin plugin;
+    private CommandNode rootNode;
+    private CommandNode levelNode;
+
+    protected PermCommand(final PermPlugin plugin) {
+        this.plugin = plugin;
+        rootNode = new CommandNode("perm");
+        levelNode = rootNode.addChild("level")
+            .description("Level commands");
+        levelNode.addChild("list").denyTabCompletion()
+            .description("List levels")
+            .senderCaller(this::levelList);
+        levelNode.addChild("info").arguments("<level>")
+            .description("Print level info")
+            .completers(CommandArgCompleter.integer(i -> i >= 0))
+            .senderCaller(this::levelInfo);
+        levelNode.addChild("tofile").denyTabCompletion()
+            .description("Dump levels to file")
+            .senderCaller(this::levelToFile);
+        levelNode.addChild("fromfile").denyTabCompletion()
+            .description("Load levels from file")
+            .senderCaller(this::levelFromFile);
+    }
 
     @Override
     public boolean onCommand(final CommandSender sender,
@@ -58,6 +90,7 @@ public final class PermCommand implements TabExecutor {
         case "group": return groupCommand(sender, argl(args));
         case "list": return listCommand(sender, argl(args));
         case "local": return localCommand(sender, argl(args));
+        case "level": return levelNode.call(new CommandContext(sender, command, label, args), argl(args));
         default:
             return false;
         }
@@ -73,19 +106,13 @@ public final class PermCommand implements TabExecutor {
 
     private boolean playerCommand(CommandSender sender, String[] args) {
         if (args.length < 1) return false;
-        String playerName = args[0];
-        UUID playerUuid = PlayerCache.uuidForName(playerName);
-        if (playerUuid == null) {
-            sender.sendMessage("Player not found: " + playerName);
-            return true;
-        }
-        playerName = PlayerCache.nameForUuid(playerUuid);
+        PlayerCache target = PlayerCache.require(args[0]);
         String subcmd = args.length >= 2 ? args[1] : null;
         if ("get".equals(subcmd) && args.length == 3) {
             String perm = args[2];
-            Boolean value = plugin.cache.findPlayerPerms(playerUuid).get(perm);
+            Boolean value = plugin.cache.findPlayerPerms(target.uuid).get(perm);
             sender.sendMessage(String.format("Setting for %s of %s: %s",
-                                             playerName, perm, value));
+                                             target.name, perm, value));
             return true;
         } else if ("show".equals(subcmd) && (args.length == 2 || args.length == 3)) {
             String pattern = args.length >= 3
@@ -93,13 +120,13 @@ public final class PermCommand implements TabExecutor {
                 : null;
             if (pattern == null) {
                 sender.sendMessage("Declared permissions of "
-                                   + playerName + ":");
+                                   + target.name + ":");
             } else {
                 sender.sendMessage("Declared permissions of "
-                                   + playerName + " matching "
+                                   + target.name + " matching "
                                    + pattern + ":");
             }
-            String entityName = playerUuid.toString();
+            String entityName = target.uuid.toString();
             int count = 0;
             for (SQLPermission permission : plugin.cache.permissions) {
                 if (permission.isGroup()) continue;
@@ -117,14 +144,14 @@ public final class PermCommand implements TabExecutor {
                 : null;
             if (pattern == null) {
                 sender.sendMessage("All permissions of "
-                                   + playerName + ":");
+                                   + target.name + ":");
             } else {
                 sender.sendMessage("All permissions of "
-                                   + playerName + " matching "
+                                   + target.name + " matching "
                                    + pattern + ":");
             }
             int count = 0;
-            for (Map.Entry<String, Boolean> entry : plugin.cache.findPlayerPerms(playerUuid).entrySet()) {
+            for (Map.Entry<String, Boolean> entry : plugin.cache.findPlayerPerms(target.uuid).entrySet()) {
                 String perm = entry.getKey();
                 if (pattern == null || perm.contains(pattern)) {
                     list(sender, entry.getKey(), entry.getValue());
@@ -135,9 +162,9 @@ public final class PermCommand implements TabExecutor {
             return true;
         } else if ("has".equals(subcmd) && args.length == 3) {
             String perm = args[2];
-            Player player = plugin.getServer().getPlayer(playerUuid);
+            Player player = plugin.getServer().getPlayer(target.uuid);
             if (player == null) {
-                sender.sendMessage(playerName + " is not online!");
+                sender.sendMessage(target.name + " is not online!");
                 return true;
             }
             sender.sendMessage(String
@@ -147,8 +174,8 @@ public final class PermCommand implements TabExecutor {
                                        player.hasPermission(perm)));
             return true;
         } else if ("groups".equals(subcmd) && args.length == 2) {
-            sender.sendMessage(playerName + " is in groups: "
-                               + plugin.findPlayerGroups(playerUuid));
+            sender.sendMessage(target.name + " is in groups: "
+                               + plugin.findPlayerGroups(target.uuid));
             return true;
         } else if ("set".equals(subcmd)
                    && (args.length == 3 || args.length == 4)) {
@@ -156,16 +183,16 @@ public final class PermCommand implements TabExecutor {
             boolean value = args.length >= 4
                 ? Boolean.parseBoolean(args[3])
                 : true;
-            plugin.setPlayerPerm(playerUuid, perm, value);
+            plugin.setPlayerPerm(target.uuid, perm, value);
             sender.sendMessage(perm + " set to " + value
-                               + " for " + playerName);
+                               + " for " + target.name);
             return true;
         } else if ("unset".equals(subcmd) && args.length == 3) {
             String perm = args[2];
-            if (plugin.setPlayerPerm(playerUuid, perm, null)) {
-                sender.sendMessage(perm + " unset for " + playerName);
+            if (plugin.setPlayerPerm(target.uuid, perm, null)) {
+                sender.sendMessage(perm + " unset for " + target.name);
             } else {
-                sender.sendMessage(playerName + " does not set " + perm);
+                sender.sendMessage(target.name + " does not set " + perm);
             }
             return true;
         } else if ("addgroup".equals(subcmd) && args.length == 3) {
@@ -174,21 +201,21 @@ public final class PermCommand implements TabExecutor {
                 sender.sendMessage("Group not found: " + groupName);
                 return true;
             }
-            if (plugin.setMembership(playerUuid, groupName, true)) {
-                sender.sendMessage(playerName + " added to group "
+            if (plugin.setMembership(target.uuid, groupName, true)) {
+                sender.sendMessage(target.name + " added to group "
                                    + groupName);
             } else {
-                sender.sendMessage(playerName + " already in group "
+                sender.sendMessage(target.name + " already in group "
                                    + groupName);
             }
             return true;
         } else if ("removegroup".equals(subcmd) && args.length == 3) {
             String groupName = args[2];
-            if (plugin.setMembership(playerUuid, groupName, false)) {
-                sender.sendMessage(playerName + " removed from group "
+            if (plugin.setMembership(target.uuid, groupName, false)) {
+                sender.sendMessage(target.name + " removed from group "
                                    + groupName);
             } else {
-                sender.sendMessage(playerName + " is not in group "
+                sender.sendMessage(target.name + " is not in group "
                                    + groupName);
             }
             return true;
@@ -198,20 +225,20 @@ public final class PermCommand implements TabExecutor {
                 sender.sendMessage("Group not found: " + groupName);
                 return true;
             }
-            List<String> groups = plugin.findPlayerGroups(playerUuid);
+            List<String> groups = plugin.findPlayerGroups(target.uuid);
             if (groups.size() == 1
                 && groups.get(0).equals(groupName)) {
-                sender.sendMessage(playerName + " already in group "
+                sender.sendMessage(target.name + " already in group "
                                    + groupName);
                 return true;
             }
             plugin.db.find(SQLMember.class)
-                .eq("member", playerUuid)
+                .eq("member", target.uuid)
                 .delete();
-            plugin.db.insert(new SQLMember(playerUuid, groupName));
+            plugin.db.insert(new SQLMember(target.uuid, groupName));
             plugin.updateVersion();
             plugin.refreshPermissionsAsync();
-            sender.sendMessage(playerName + " now in group " + groupName);
+            sender.sendMessage(target.name + " now in group " + groupName);
             return true;
         } else if ("replacegroup".equals(subcmd) && args.length == 4) {
             final String fromGroupArg = args[2];
@@ -226,38 +253,52 @@ public final class PermCommand implements TabExecutor {
                 sender.sendMessage("Group not found: " + toGroupArg);
                 return true;
             }
-            List<String> groups = plugin.findPlayerGroups(playerUuid);
+            List<String> groups = plugin.findPlayerGroups(target.uuid);
             if (!groups.contains(fromGroup.getKey())) {
-                sender.sendMessage(playerName + " not in group "
+                sender.sendMessage(target.name + " not in group "
                                    + fromGroup.getDisplayName());
                 return true;
             }
             if (groups.contains(toGroup.getKey())) {
-                sender.sendMessage(playerName + " already in group "
+                sender.sendMessage(target.name + " already in group "
                                    + toGroup.getDisplayName());
                 return true;
             }
             plugin.db.find(SQLMember.class)
-                .eq("member", playerUuid)
+                .eq("member", target.uuid)
                 .eq("group", fromGroup.getKey())
                 .delete();
-            plugin.db.insert(new SQLMember(playerUuid, toGroup.getKey()));
+            plugin.db.insert(new SQLMember(target.uuid, toGroup.getKey()));
             plugin.updateVersion();
             plugin.refreshPermissionsAsync();
-            sender.sendMessage(playerName + " removed from "
+            sender.sendMessage(target.name + " removed from "
                                + fromGroup.getDisplayName()
                                + " and added to "
                                + toGroup.getDisplayName());
             return true;
         } else if ("info".equals(subcmd) && args.length == 2) {
-            PlayerRank playerRank = PlayerRank.ofPlayer(playerUuid);
-            StaffRank staffRank = StaffRank.ofPlayer(playerUuid);
-            Set<ExtraRank> extraRanks = ExtraRank.ofPlayer(playerUuid);
-            sender.sendMessage(text("Ranks of " + playerName + ":"
+            PlayerRank playerRank = PlayerRank.ofPlayer(target.uuid);
+            StaffRank staffRank = StaffRank.ofPlayer(target.uuid);
+            Set<ExtraRank> extraRanks = ExtraRank.ofPlayer(target.uuid);
+            sender.sendMessage(text("Ranks of " + target.name + ":"
                                     + " player=" + playerRank
                                     + " staff=" + staffRank
                                     + " extra=" + extraRanks,
                                     YELLOW));
+            return true;
+        } else if ("level".equals(subcmd) && args.length == 2) {
+            sender.sendMessage(text(target.name + " has"
+                                    + " level " + plugin.getPlayerLevel(target.uuid)
+                                    + " progress " + plugin.getPlayerLevelProgress(target.uuid),
+                                    YELLOW));
+            return true;
+        } else if ("addlevel".equals(subcmd) && args.length == 2) {
+            plugin.addPlayerLevelProgress(target.uuid, () -> {
+                    sender.sendMessage(text(target.name + " now has"
+                                            + " level " + plugin.getPlayerLevel(target.uuid)
+                                            + " progress " + plugin.getPlayerLevelProgress(target.uuid),
+                                            YELLOW));
+                });
             return true;
         } else {
             sender.sendMessage("Usage");
@@ -281,6 +322,10 @@ public final class PermCommand implements TabExecutor {
                                + " - Set sole player group");
             sender.sendMessage("/perm player <name> replacegroup <from> <to>"
                                + " - Replace player group");
+            sender.sendMessage("/perm player <name> level"
+                               + " - View player level");
+            sender.sendMessage("/perm player <name> addlevel"
+                               + " - Increase player level progress");
             return true;
         }
     }
@@ -613,7 +658,7 @@ public final class PermCommand implements TabExecutor {
         String cmd = args[0];
         String arg = args[args.length - 1];
         if (args.length == 1) {
-            return contains(arg, Stream.of("player", "group", "list", "refresh"));
+            return contains(arg, Stream.of("player", "group", "list", "refresh", "level"));
         }
         switch (cmd) {
         case "list":
@@ -633,7 +678,8 @@ public final class PermCommand implements TabExecutor {
                                           "set", "unset",
                                           "groups",
                                           "addgroup", "removegroup",
-                                          "setgroup", "replacegroup"));
+                                          "setgroup", "replacegroup",
+                                          "info", "level", "addlevel"));
             }
             String sub = args[2];
             if (in(sub, "addgroup", "setgroup")) {
@@ -657,7 +703,7 @@ public final class PermCommand implements TabExecutor {
                 }
                 return Collections.emptyList();
             }
-            if (in(sub, "set", "unset")) {
+            if (in(sub, "set", "unset", "show", "dump")) {
                 if (args.length == 4) {
                     return completePermissions(arg);
                 }
@@ -696,16 +742,107 @@ public final class PermCommand implements TabExecutor {
                 }
                 return Collections.emptyList();
             }
-            if (in(sub, "set", "unset")) {
+            if (in(sub, "set", "unset", "show", "dump")) {
                 if (args.length == 4) {
                     return completePermissions(arg);
                 }
             }
             return Collections.emptyList();
         }
+        case "level": return levelNode.complete(new CommandContext(sender, command, alias, args), argl(args));
         default:
             return null;
         }
+    }
+
+    private void levelList(CommandSender sender) {
+        int level = 0;
+        int count = 0;
+        List<Component> list = new ArrayList<>();
+        for (SQLLevel row : plugin.cache.levels) {
+            if (row.getLevel() != level) {
+                if (count > 0) {
+                    list.add(join(noSeparators(), text(level, YELLOW), text(":", DARK_GRAY), text(count, WHITE)));
+                }
+                level = row.getLevel();
+                count = 1;
+            }
+        }
+        if (count > 0) {
+            list.add(join(noSeparators(), text(level, YELLOW), text(":", DARK_GRAY), text(count, WHITE)));
+        }
+        if (list.isEmpty()) throw new CommandWarn("No levels to show!");
+        sender.sendMessage(join(separator(space()), list));
+    }
+
+    private boolean levelInfo(CommandSender sender, String[] args) {
+        if (args.length != 1) return false;
+        int level = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
+        List<SQLLevel> rows = new ArrayList<>();
+        for (SQLLevel row : plugin.cache.levels) {
+            if (row.getLevel() == level) rows.add(row);
+        }
+        if (rows.isEmpty()) throw new CommandWarn("Nothing to show for level " + level);
+        sender.sendMessage(join(noSeparators(), text("Info for level "), Glyph.toComponent("" + level)));
+        for (SQLLevel row : rows) {
+            sender.sendMessage(join(noSeparators(),
+                                    (row.isValue() ? text("+", AQUA) : text("-", RED)),
+                                    space(),
+                                    text(row.getPermission(), row.isValue() ? AQUA : RED),
+                                    space(),
+                                    text((row.getDescription() != null ? row.getDescription() : ""), GRAY, ITALIC)));
+        }
+        return true;
+    }
+
+    private void levelToFile(CommandSender sender) {
+        plugin.getDataFolder().mkdirs();
+        File file = new File(plugin.getDataFolder(), "levels.txt");
+        int lineCount = 0;
+        try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
+            for (SQLLevel row : plugin.cache.levels) {
+                out.println(String.join(" ",
+                                        (row.isValue() ? "+" : "-"),
+                                        "" + row.getLevel(),
+                                        row.getPermission(),
+                                        row.getDescription() != null ? row.getDescription() : ""));
+                lineCount += 1;
+            }
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw new CommandWarn(ioe.getClass().getName() + " see console");
+        }
+        sender.sendMessage(text(lineCount + " lines written to " + file, YELLOW));
+    }
+
+    private void levelFromFile(CommandSender sender) {
+        File file = new File(plugin.getDataFolder(), "levels.txt");
+        if (!file.exists()) throw new CommandWarn("File not found: " + file);
+        List<SQLLevel> rows = new ArrayList<>();
+        try (BufferedReader in = new BufferedReader(new FileReader(file))) {
+            while (true) {
+                String line = in.readLine();
+                if (line == null) break;
+                line = line.strip();
+                if (line.isEmpty()) continue;
+                String[] tokens = line.split(" ", 4);
+                if (tokens.length < 3) throw new CommandWarn("Invalid line: " + line);
+                boolean value = tokens[0].equals("+") ? true : false;
+                int level = CommandArgCompleter.requireInt(tokens[1], i -> i >= 0);
+                String permission = tokens[2];
+                SQLLevel row = new SQLLevel(level, permission, value);
+                if (tokens.length >= 4) row.setDescription(tokens[3]);
+                rows.add(row);
+            }
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw new CommandWarn(ioe.getClass().getName() + " see console");
+        }
+        plugin.db.find(SQLLevel.class).delete();
+        plugin.db.insert(rows);
+        plugin.updateVersion();
+        plugin.refreshPermissionsSync();
+        sender.sendMessage(text(rows.size() + " level lines parsed", YELLOW));
     }
 
     private static String[] argl(String[] args) {

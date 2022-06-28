@@ -4,12 +4,15 @@ import com.cavetale.core.connect.Connect;
 import com.winthier.perm.event.PlayerPermissionUpdateEvent;
 import com.winthier.perm.rank.Rank;
 import com.winthier.perm.sql.SQLGroup;
+import com.winthier.perm.sql.SQLLevel;
 import com.winthier.perm.sql.SQLMember;
 import com.winthier.perm.sql.SQLPermission;
+import com.winthier.perm.sql.SQLPlayerLevel;
 import com.winthier.perm.sql.SQLVersion;
 import com.winthier.sql.SQLDatabase;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +40,7 @@ public final class PermPlugin extends JavaPlugin {
     protected boolean vaultEnabled = false;
     protected BukkitRunnable updateTask;
     protected PermCommand permCommand = new PermCommand(this);
+    protected TierCommand tierCommand = new TierCommand(this);
     protected PromoteCommand promoteCommand = new PromoteCommand(this);
     protected EventListener listener = new EventListener(this);
     @Getter protected static PermPlugin instance;
@@ -54,10 +58,12 @@ public final class PermPlugin extends JavaPlugin {
     public void onEnable() {
         corePerm.register();
         db = new SQLDatabase(this);
-        db.registerTables(SQLGroup.class,
-                          SQLMember.class,
-                          SQLPermission.class,
-                          SQLVersion.class);
+        db.registerTables(List.of(SQLGroup.class,
+                                  SQLMember.class,
+                                  SQLPermission.class,
+                                  SQLLevel.class,
+                                  SQLPlayerLevel.class,
+                                  SQLVersion.class));
         if (!db.createAllTables()) {
             throw new IllegalStateException("Table creation failed!");
         }
@@ -80,6 +86,7 @@ public final class PermPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(listener, this);
         getCommand("perm").setExecutor(permCommand);
         getCommand("promote").setExecutor(promoteCommand);
+        tierCommand.enable();
         localPermissionsFile = new File(getDataFolder(), "local.yml");
         refreshPermissionsSync();
         tryToLoadVault();
@@ -118,7 +125,7 @@ public final class PermPlugin extends JavaPlugin {
             if (version == null) version = new SQLVersion("Perm");
         }
         version.setNow();
-        db.saveAsync(version, null);
+        db.updateAsync(version, null);
         broadcastRefresh();
     }
 
@@ -248,6 +255,11 @@ public final class PermPlugin extends JavaPlugin {
         }
     }
 
+    protected void setupPlayerPerms(final UUID uuid) {
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null) setupPlayerPerms(player);
+    }
+
     public boolean playerHasPerm(final UUID uuid, final String perm) {
         Map<String, Boolean> perms = cache.findPlayerPerms(uuid);
         Boolean result = perms.get(perm);
@@ -355,6 +367,67 @@ public final class PermPlugin extends JavaPlugin {
             result.add(group.getKey());
         }
         return result;
+    }
+
+    public int getPlayerLevel(UUID uuid) {
+        SQLPlayerLevel row = cache.playerLevels.get(uuid);
+        return row != null
+            ? row.getLevel()
+            : 0;
+    }
+
+    public int getPlayerLevelProgress(UUID uuid) {
+        SQLPlayerLevel row = cache.playerLevels.get(uuid);
+        return row != null
+            ? row.getProgress()
+            : 0;
+    }
+
+    public void addPlayerLevelProgress(UUID uuid, Runnable callback) {
+        SQLPlayerLevel row = cache.playerLevels.get(uuid);
+        if (row == null) {
+            SQLPlayerLevel newRow = new SQLPlayerLevel(uuid);
+            newRow.setLevel(1);
+            db.insertAsync(newRow, r -> {
+                    if (r == 0) {
+                        getLogger().warning("Progress creation failed: " + uuid);
+                        refreshPermissionsAsync();
+                    } else {
+                        cache.playerLevels.put(uuid, newRow);
+                        cache.flushPlayer(uuid);
+                        setupPlayerPerms(uuid);
+                        updateVersion();
+                    }
+                    if (callback != null) callback.run();
+                });
+        } else {
+            int level = row.getLevel();
+            int progress = row.getProgress() + 1;
+            if (progress >= level) {
+                level += 1;
+                progress = 0;
+            }
+            db.update(SQLPlayerLevel.class)
+                .row(row)
+                .atomic("level", level)
+                .atomic("progress", progress)
+                .set("updated", new Date())
+                .async(r -> {
+                        if (r == 0) {
+                            getLogger().warning("Progress update failed: " + row);
+                            refreshPermissionsAsync();
+                        } else {
+                            cache.flushPlayer(uuid);
+                            setupPlayerPerms(uuid);
+                            updateVersion();
+                        }
+                        if (callback != null) callback.run();
+                    });
+        }
+    }
+
+    public void addPlayerLevelProgress(UUID uuid) {
+        addPlayerLevelProgress(uuid, null);
     }
 
     public void broadcastRefresh() {

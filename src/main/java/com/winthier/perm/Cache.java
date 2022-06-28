@@ -1,8 +1,10 @@
 package com.winthier.perm;
 
 import com.winthier.perm.sql.SQLGroup;
+import com.winthier.perm.sql.SQLLevel;
 import com.winthier.perm.sql.SQLMember;
 import com.winthier.perm.sql.SQLPermission;
+import com.winthier.perm.sql.SQLPlayerLevel;
 import com.winthier.perm.sql.SQLVersion;
 import com.winthier.sql.SQLDatabase;
 import java.util.ArrayList;
@@ -36,6 +38,9 @@ public final class Cache {
     final HashMap<String, Set<UUID>> groupMembers = new HashMap<>();
     // Map group id to priority.
     final HashMap<String, Integer> groupPrios = new HashMap<>();
+    // Levels
+    protected final List<SQLLevel> levels = new ArrayList<>();
+    protected final Map<UUID, SQLPlayerLevel> playerLevels = new HashMap<>();
 
     // Map set of group id to permissions. This is populated lazily and may be flushed any time.
     final HashMap<Set<String>, HashMap<String, Boolean>> deepGroupPerms = new HashMap<>();
@@ -49,6 +54,11 @@ public final class Cache {
         this.members.addAll(db.find(SQLMember.class).findList());
         this.permissions.addAll(db.find(SQLPermission.class).findList());
         this.permissions.addAll(localPermissions);
+        this.levels.addAll(db.find(SQLLevel.class).orderByAscending("level").findList());
+        Collections.sort(levels);
+        for (SQLPlayerLevel row : db.find(SQLPlayerLevel.class).findList()) {
+            playerLevels.put(row.getPlayer(), row);
+        }
         this.version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
         if (version == null) version = new SQLVersion("Perm");
         deepGroupParents.put(PermPlugin.DEFAULT_GROUP, new ArrayList<>());
@@ -94,9 +104,21 @@ public final class Cache {
     protected Map<String, Boolean> findPlayerPerms(final UUID uuid) {
         Map<String, Boolean> perms = deepPlayerPerms.get(uuid);
         if (perms != null) return perms;
+        perms = new HashMap<>();
+        // Levels
+        SQLPlayerLevel playerLevelRow = playerLevels.get(uuid);
+        int playerLevel = playerLevelRow != null
+            ? playerLevelRow.getLevel()
+            : 0;
+        for (SQLLevel levelRow : levels) {
+            if (levelRow.getLevel() > playerLevel) break;
+            perms.put(levelRow.getPermission(), levelRow.isValue());
+        }
+        // Groups
         Set<String> assignedGroups = findAssignedGroups(uuid);
         Map<String, Boolean> groupPerms = findGroupPerms(assignedGroups);
-        perms = new HashMap<>(groupPerms);
+        perms.putAll(groupPerms);
+        // Player perms
         HashMap<String, Boolean> playerPerms = flatPlayerPerms.get(uuid);
         if (playerPerms != null) perms.putAll(playerPerms);
         deepPlayerPerms.put(uuid, perms);
@@ -185,5 +207,11 @@ public final class Cache {
             }
         }
         return perms;
+    }
+
+    public void flushPlayer(UUID uuid) {
+        deepPlayerPerms.remove(uuid);
+        deepPlayerGroups.remove(uuid);
+        flatPlayerGroups.remove(uuid);
     }
 }
