@@ -74,11 +74,11 @@ public final class Cache {
             set.add(row.getMember());
         }
         for (SQLPermission row : permissions) {
-            if (row.getIsGroup()) {
+            if (row.isGroup()) {
                 SQLGroup group = findGroup(row.getEntity());
                 if (group == null) continue;
                 flatGroupPerms.get(group.getKey())
-                    .put(row.getPermission(), row.getValue());
+                    .put(row.getPermission(), row.isValue());
             } else {
                 UUID uuid = row.getUuid();
                 HashMap<String, Boolean> perms = flatPlayerPerms.get(uuid);
@@ -86,7 +86,7 @@ public final class Cache {
                     perms = new HashMap<>();
                     flatPlayerPerms.put(uuid, perms);
                 }
-                perms.put(row.getPermission(), row.getValue());
+                perms.put(row.getPermission(), row.isValue());
             }
         }
     }
@@ -168,16 +168,16 @@ public final class Cache {
         }
         final Map<String, Integer> prios = new HashMap<>();
         for (SQLPermission perm : permissions) {
-            if (perm.getIsGroup()) {
+            if (perm.isGroup()) {
                 if (groupMap.containsKey(perm.getEntity())) {
                     Boolean oldPerm = perms.get(perm.getPermission());
                     if (oldPerm == null) {
-                        perms.put(perm.getPermission(), perm.getValue());
+                        perms.put(perm.getPermission(), perm.isValue());
                         prios.put(perm.getPermission(), groupMap.get(perm.getEntity()));
                     } else {
                         Integer oldPrio = prios.get(perm.getPermission());
                         if (oldPrio < groupMap.get(perm.getEntity())) {
-                            perms.put(perm.getPermission(), perm.getValue());
+                            perms.put(perm.getPermission(), perm.isValue());
                             prios.put(perm.getPermission(), groupMap.get(perm.getEntity()));
                         }
                     }

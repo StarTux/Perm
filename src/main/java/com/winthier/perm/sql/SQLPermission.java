@@ -1,35 +1,24 @@
 package com.winthier.perm.sql;
 
 import com.winthier.sql.SQLRow;
+import com.winthier.sql.SQLRow.Name;
+import com.winthier.sql.SQLRow.NotNull;
+import com.winthier.sql.SQLRow.UniqueKey;
 import java.util.UUID;
-import javax.persistence.Column;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 import lombok.Data;
-import lombok.NonNull;
 
-@Data
-@Table(name = "permissions",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"entity", "permission"}))
+@Data @NotNull @Name("permission")
+@UniqueKey({"entity", "permission"})
 public final class SQLPermission implements SQLRow {
-    @Id
-    private Integer id;
-    @Column(nullable = false, length = 40)
-    private String entity;
-    @Column(nullable = false)
-    private Boolean isGroup;
-    @Column(nullable = false, length = 64)
-    private String permission;
-    @Column(nullable = false)
-    private Boolean value;
+    @Id private Integer id;
+    @VarChar(40) private String entity;
+    private boolean isGroup;
+    @VarChar(64) private String permission;
+    private boolean value;
 
     public SQLPermission() { }
 
-    public SQLPermission(@NonNull final String entity,
-                         final boolean isGroup,
-                         @NonNull final String permission,
-                         final boolean value) {
+    public SQLPermission(final String entity, final boolean isGroup, final String permission, final boolean value) {
         this.entity = entity;
         this.isGroup = isGroup;
         this.permission = permission;

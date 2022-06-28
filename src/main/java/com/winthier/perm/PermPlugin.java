@@ -1,5 +1,6 @@
 package com.winthier.perm;
 
+import com.cavetale.core.connect.Connect;
 import com.winthier.perm.event.PlayerPermissionUpdateEvent;
 import com.winthier.perm.rank.Rank;
 import com.winthier.perm.sql.SQLGroup;
@@ -27,6 +28,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 @Getter
 public final class PermPlugin extends JavaPlugin {
+    public static final String CHANNEL = "perm";
+    public static final String REFRESH = "refresh";
     protected static final String DEFAULT_GROUP = "guest";
     protected static final long REFRESH_INTERVAL = 30L * 20L;
     protected SQLDatabase db;
@@ -36,7 +39,6 @@ public final class PermPlugin extends JavaPlugin {
     protected PermCommand permCommand = new PermCommand(this);
     protected PromoteCommand promoteCommand = new PromoteCommand(this);
     protected EventListener listener = new EventListener(this);
-    protected ConnectHandler connectHandler;
     @Getter protected static PermPlugin instance;
     protected File localPermissionsFile;
     protected List<SQLPermission> localPermissionsCache;
@@ -81,9 +83,6 @@ public final class PermPlugin extends JavaPlugin {
         localPermissionsFile = new File(getDataFolder(), "local.yml");
         refreshPermissionsSync();
         tryToLoadVault();
-        if (Bukkit.getPluginManager().isPluginEnabled("Connect")) {
-            connectHandler = new ConnectHandler(this).enable();
-        }
         Bukkit.getScheduler().runTaskTimer(this, this::testVersion, 0L, REFRESH_INTERVAL);
     }
 
@@ -120,9 +119,7 @@ public final class PermPlugin extends JavaPlugin {
         }
         version.setNow();
         db.saveAsync(version, null);
-        if (connectHandler != null) {
-            connectHandler.broadcastRefresh();
-        }
+        broadcastRefresh();
     }
 
     protected List<SQLPermission> loadLocalPermissions() {
@@ -296,7 +293,7 @@ public final class PermPlugin extends JavaPlugin {
             row = new SQLPermission(uuid.toString(), false, perm, value);
             db.save(row);
         } else {
-            if (row.getValue() == value) return false;
+            if (row.isValue() == value) return false;
             row.setValue(value);
             db.save(row);
         }
@@ -321,7 +318,7 @@ public final class PermPlugin extends JavaPlugin {
             row = new SQLPermission(group, true, perm, value);
             db.save(row);
         } else {
-            if (row.getValue() == value) return false;
+            if (row.isValue() == value) return false;
             row.setValue(value);
             db.save(row);
         }
@@ -358,5 +355,9 @@ public final class PermPlugin extends JavaPlugin {
             result.add(group.getKey());
         }
         return result;
+    }
+
+    public void broadcastRefresh() {
+        Connect.get().broadcastMessage(CHANNEL, REFRESH);
     }
 }

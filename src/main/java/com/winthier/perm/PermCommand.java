@@ -102,10 +102,10 @@ public final class PermCommand implements TabExecutor {
             String entityName = playerUuid.toString();
             int count = 0;
             for (SQLPermission permission : plugin.cache.permissions) {
-                if (permission.getIsGroup()) continue;
+                if (permission.isGroup()) continue;
                 if (!entityName.equals(permission.getEntity())) continue;
                 if (pattern == null || permission.getPermission().contains(pattern)) {
-                    list(sender, permission.getPermission(), permission.getValue());
+                    list(sender, permission.getPermission(), permission.isValue());
                     count += 1;
                 }
             }
@@ -379,10 +379,10 @@ public final class PermCommand implements TabExecutor {
             }
             int count = 0;
             for (SQLPermission permission : plugin.cache.permissions) {
-                if (!permission.getIsGroup()) continue;
+                if (!permission.isGroup()) continue;
                 if (!groupName.equals(permission.getEntity())) continue;
                 if (pattern == null || permission.getPermission().contains(pattern)) {
-                    list(sender, permission.getPermission(), permission.getValue());
+                    list(sender, permission.getPermission(), permission.isValue());
                     count += 1;
                 }
             }
@@ -579,12 +579,12 @@ public final class PermCommand implements TabExecutor {
             sender.sendMessage("Assigned player permissions:");
             int count = 0;
             for (SQLPermission permission : plugin.cache.permissions) {
-                if (permission.getIsGroup()) continue;
+                if (permission.isGroup()) continue;
                 final UUID uuid = UUID.fromString(permission.getEntity());
                 String playerName = PlayerCache.nameForUuid(uuid);
                 sender.sendMessage(playerName + ": "
                                    + permission.getPermission()
-                                   + ": " + permission.getValue());
+                                   + ": " + permission.isValue());
                 count += 1;
             }
             sender.sendMessage("Total " + count);
