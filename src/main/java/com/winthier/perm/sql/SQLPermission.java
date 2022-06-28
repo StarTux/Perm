@@ -7,7 +7,7 @@ import com.winthier.sql.SQLRow.UniqueKey;
 import java.util.UUID;
 import lombok.Data;
 
-@Data @NotNull @Name("permission")
+@Data @NotNull @Name("permissions")
 @UniqueKey({"entity", "permission"})
 public final class SQLPermission implements SQLRow {
     @Id private Integer id;
