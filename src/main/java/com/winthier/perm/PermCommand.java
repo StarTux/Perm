@@ -91,6 +91,7 @@ public final class PermCommand implements TabExecutor {
         case "list": return listCommand(sender, argl(args));
         case "local": return localCommand(sender, argl(args));
         case "level": return levelNode.call(new CommandContext(sender, command, label, args), argl(args));
+        case "dumpranks": return dumpRanksCommand(sender);
         default:
             return false;
         }
@@ -766,6 +767,8 @@ public final class PermCommand implements TabExecutor {
                 }
                 level = row.getLevel();
                 count = 1;
+            } else {
+                count += 1;
             }
         }
         if (count > 0) {
@@ -800,10 +803,16 @@ public final class PermCommand implements TabExecutor {
         File file = new File(plugin.getDataFolder(), "levels.txt");
         int lineCount = 0;
         try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
+            int level = -1;
             for (SQLLevel row : plugin.cache.levels) {
+                if (row.getLevel() != level) {
+                    level = row.getLevel();
+                    out.println("");
+                    out.println("" + row.getLevel());
+                    out.println("");
+                }
                 out.println(String.join(" ",
                                         (row.isValue() ? "+" : "-"),
-                                        "" + row.getLevel(),
                                         row.getPermission(),
                                         row.getDescription() != null ? row.getDescription() : ""));
                 lineCount += 1;
@@ -820,19 +829,28 @@ public final class PermCommand implements TabExecutor {
         if (!file.exists()) throw new CommandWarn("File not found: " + file);
         List<SQLLevel> rows = new ArrayList<>();
         try (BufferedReader in = new BufferedReader(new FileReader(file))) {
+            int level = 0;
             while (true) {
                 String line = in.readLine();
                 if (line == null) break;
+                do {
+                    int hashIndex = line.indexOf("#");
+                    if (hashIndex < 0) break;
+                    line = line.substring(0, hashIndex);
+                } while (true);
                 line = line.strip();
                 if (line.isEmpty()) continue;
-                String[] tokens = line.split(" ", 4);
-                if (tokens.length < 3) throw new CommandWarn("Invalid line: " + line);
-                boolean value = tokens[0].equals("+") ? true : false;
-                int level = CommandArgCompleter.requireInt(tokens[1], i -> i >= 0);
-                String permission = tokens[2];
-                SQLLevel row = new SQLLevel(level, permission, value);
-                if (tokens.length >= 4) row.setDescription(tokens[3]);
-                rows.add(row);
+                String[] tokens = line.split(" ", 3);
+                if (tokens.length == 1) {
+                    level = CommandArgCompleter.requireInt(tokens[0], i -> i >= 0);
+                } else {
+                    if (tokens.length < 2) throw new CommandWarn("Invalid line: " + line);
+                    boolean value = tokens[0].equals("+") ? true : false;
+                    String permission = tokens[1];
+                    SQLLevel row = new SQLLevel(level, permission, value);
+                    if (tokens.length >= 3) row.setDescription(tokens[2]);
+                    rows.add(row);
+                }
             }
         } catch (IOException ioe) {
             ioe.printStackTrace();
@@ -875,5 +893,32 @@ public final class PermCommand implements TabExecutor {
             .map(Permission::getName)
             .filter(p -> p.contains(key))
             .collect(Collectors.toList());
+    }
+
+    private boolean dumpRanksCommand(CommandSender sender) {
+        plugin.getDataFolder().mkdirs();
+        File file = new File(plugin.getDataFolder(), "ranks.txt");
+        try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
+            int level = 0;
+            for (PlayerRank playerRank : PlayerRank.values()) {
+                Map<String, Boolean> groupPerms = plugin.cache.flatGroupPerms.get(playerRank.key);
+                if (groupPerms == null || groupPerms.isEmpty()) continue;
+                out.println("");
+                out.println("" + level + " # " + playerRank);
+                out.println("");
+                List<String> perms = new ArrayList<>(groupPerms.keySet());
+                perms.sort(String.CASE_INSENSITIVE_ORDER);
+                for (String perm : perms) {
+                    boolean value = groupPerms.get(perm);
+                    out.println((value ? "+" : "-") + " " + perm);
+                }
+                level += 1;
+            }
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            throw new CommandWarn(ioe.getClass().getName() + " see console");
+        }
+        sender.sendMessage("Ranks dumped to " + file);
+        return true;
     }
 }
