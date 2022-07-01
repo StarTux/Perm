@@ -1,6 +1,7 @@
 package com.winthier.perm;
 
 import com.cavetale.core.command.AbstractCommand;
+import com.cavetale.core.event.player.PluginPlayerEvent;
 import com.cavetale.core.font.Emoji;
 import com.cavetale.core.font.GlyphPolicy;
 import com.cavetale.mytems.item.font.Glyph;
@@ -75,5 +76,6 @@ public final class TierCommand extends AbstractCommand<PermPlugin> {
                 meta.title(text("Tier"));
             });
         player.openBook(book);
+        PluginPlayerEvent.Name.USE_TIER.call(plugin, player);
     }
 }
