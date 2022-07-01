@@ -125,7 +125,7 @@ public final class PermPlugin extends JavaPlugin {
             if (version == null) version = new SQLVersion("Perm");
         }
         version.setNow();
-        db.updateAsync(version, null);
+        db.saveAsync(version, null);
         broadcastRefresh();
     }
 
