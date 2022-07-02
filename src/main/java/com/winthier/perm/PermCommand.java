@@ -6,7 +6,6 @@ import com.cavetale.core.command.CommandNode;
 import com.cavetale.core.command.CommandWarn;
 import com.cavetale.mytems.item.font.Glyph;
 import com.winthier.perm.rank.ExtraRank;
-import com.winthier.perm.rank.PlayerRank;
 import com.winthier.perm.rank.StaffRank;
 import com.winthier.perm.sql.SQLGroup;
 import com.winthier.perm.sql.SQLLevel;
@@ -91,7 +90,6 @@ public final class PermCommand implements TabExecutor {
         case "list": return listCommand(sender, argl(args));
         case "local": return localCommand(sender, argl(args));
         case "level": return levelNode.call(new CommandContext(sender, command, label, args), argl(args));
-        case "dumpranks": return dumpRanksCommand(sender);
         default:
             return false;
         }
@@ -278,11 +276,9 @@ public final class PermCommand implements TabExecutor {
                                + toGroup.getDisplayName());
             return true;
         } else if ("info".equals(subcmd) && args.length == 2) {
-            PlayerRank playerRank = PlayerRank.ofPlayer(target.uuid);
             StaffRank staffRank = StaffRank.ofPlayer(target.uuid);
             Set<ExtraRank> extraRanks = ExtraRank.ofPlayer(target.uuid);
             sender.sendMessage(text("Ranks of " + target.name + ":"
-                                    + " player=" + playerRank
                                     + " staff=" + staffRank
                                     + " extra=" + extraRanks,
                                     YELLOW));
@@ -893,32 +889,5 @@ public final class PermCommand implements TabExecutor {
             .map(Permission::getName)
             .filter(p -> p.contains(key))
             .collect(Collectors.toList());
-    }
-
-    private boolean dumpRanksCommand(CommandSender sender) {
-        plugin.getDataFolder().mkdirs();
-        File file = new File(plugin.getDataFolder(), "ranks.txt");
-        try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
-            int level = 0;
-            for (PlayerRank playerRank : PlayerRank.values()) {
-                Map<String, Boolean> groupPerms = plugin.cache.flatGroupPerms.get(playerRank.key);
-                if (groupPerms == null || groupPerms.isEmpty()) continue;
-                out.println("");
-                out.println("" + level + " # " + playerRank);
-                out.println("");
-                List<String> perms = new ArrayList<>(groupPerms.keySet());
-                perms.sort(String.CASE_INSENSITIVE_ORDER);
-                for (String perm : perms) {
-                    boolean value = groupPerms.get(perm);
-                    out.println((value ? "+" : "-") + " " + perm);
-                }
-                level += 1;
-            }
-        } catch (IOException ioe) {
-            ioe.printStackTrace();
-            throw new CommandWarn(ioe.getClass().getName() + " see console");
-        }
-        sender.sendMessage("Ranks dumped to " + file);
-        return true;
     }
 }

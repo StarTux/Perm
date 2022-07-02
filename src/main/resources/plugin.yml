@@ -23,11 +23,6 @@ commands:
       /perm list <what> ... - List things
       /perm level ... - Level commands
 
-  promote:
-    description: Promote a player
-    permission: perm.promote
-    usage: /promote <player> [rank]
-
   tier:
     description: View tier list
     permission: perm.tier
@@ -37,10 +32,6 @@ permissions:
 
   perm.perm:
     description: Use /perm
-    default: op
-
-  perm.promote:
-    description: Use /promote
     default: op
 
   perm.tier:

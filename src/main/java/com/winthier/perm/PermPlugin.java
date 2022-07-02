@@ -41,7 +41,6 @@ public final class PermPlugin extends JavaPlugin {
     protected BukkitRunnable updateTask;
     protected PermCommand permCommand = new PermCommand(this);
     protected TierCommand tierCommand = new TierCommand(this);
-    protected PromoteCommand promoteCommand = new PromoteCommand(this);
     protected EventListener listener = new EventListener(this);
     @Getter protected static PermPlugin instance;
     protected File localPermissionsFile;
@@ -85,7 +84,6 @@ public final class PermPlugin extends JavaPlugin {
         }
         Bukkit.getPluginManager().registerEvents(listener, this);
         getCommand("perm").setExecutor(permCommand);
-        getCommand("promote").setExecutor(promoteCommand);
         tierCommand.enable();
         localPermissionsFile = new File(getDataFolder(), "local.yml");
         refreshPermissionsSync();
