@@ -22,6 +22,8 @@ import static net.kyori.adventure.text.Component.newline;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.JoinConfiguration.noSeparators;
 import static net.kyori.adventure.text.JoinConfiguration.separator;
+import static net.kyori.adventure.text.event.ClickEvent.runCommand;
+import static net.kyori.adventure.text.event.HoverEvent.showText;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
 
 public final class TierCommand extends AbstractCommand<PermPlugin> {
@@ -54,7 +56,12 @@ public final class TierCommand extends AbstractCommand<PermPlugin> {
                                text(tiny("progress "), DARK_GRAY),
                                text(playerProgress, DARK_BLUE),
                                text("/", DARK_GRAY),
-                               text(playerLevel, DARK_BLUE)));
+                               text(playerLevel, DARK_BLUE),
+                               newline(),
+                               newline(),
+                               (text("Tier up by completing tutorials and quests")
+                                .clickEvent(runCommand("/tut"))
+                                .hoverEvent(showText(text("/tut", GREEN))))));
                 Map<Integer, List<Component>> descriptions = new TreeMap<>();
                 for (SQLLevel row : plugin.cache.levels) {
                     if (row.getDescription() == null) continue;

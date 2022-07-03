@@ -14,8 +14,8 @@ import com.winthier.perm.sql.SQLPermission;
 import com.winthier.playercache.PlayerCache;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -51,6 +52,8 @@ public final class PermCommand implements TabExecutor {
     private final PermPlugin plugin;
     private CommandNode rootNode;
     private CommandNode levelNode;
+    private static final CommandArgCompleter COMPLETE_PERMS = CommandArgCompleter
+        .supplyStream(() -> Bukkit.getPluginManager().getPermissions().stream().map(Permission::getName));
 
     protected PermCommand(final PermPlugin plugin) {
         this.plugin = plugin;
@@ -64,6 +67,21 @@ public final class PermCommand implements TabExecutor {
             .description("Print level info")
             .completers(CommandArgCompleter.integer(i -> i >= 0))
             .senderCaller(this::levelInfo);
+        levelNode.addChild("set").arguments("<level> <permission> [value]")
+            .description("Set level permission")
+            .completers(CommandArgCompleter.integer(i -> i >= 0),
+                        COMPLETE_PERMS,
+                        CommandArgCompleter.BOOLEAN)
+            .senderCaller(this::levelSet);
+        levelNode.addChild("unset").arguments("<level> <permission>")
+            .description("Unset level permission")
+            .completers(CommandArgCompleter.integer(i -> i >= 0),
+                        COMPLETE_PERMS)
+            .senderCaller(this::levelUnset);
+        levelNode.addChild("find").arguments("<permission>")
+            .description("Find level permission")
+            .completers(COMPLETE_PERMS)
+            .senderCaller(this::levelFind);
         levelNode.addChild("tofile").denyTabCompletion()
             .description("Dump levels to file")
             .senderCaller(this::levelToFile);
@@ -235,8 +253,7 @@ public final class PermCommand implements TabExecutor {
                 .eq("member", target.uuid)
                 .delete();
             plugin.db.insert(new SQLMember(target.uuid, groupName));
-            plugin.updateVersion();
-            plugin.refreshPermissionsAsync();
+            plugin.updateVersionAndRefresh();
             sender.sendMessage(target.name + " now in group " + groupName);
             return true;
         } else if ("replacegroup".equals(subcmd) && args.length == 4) {
@@ -268,8 +285,7 @@ public final class PermCommand implements TabExecutor {
                 .eq("group", fromGroup.getKey())
                 .delete();
             plugin.db.insert(new SQLMember(target.uuid, toGroup.getKey()));
-            plugin.updateVersion();
-            plugin.refreshPermissionsAsync();
+            plugin.updateVersionAndRefresh();
             sender.sendMessage(target.name + " removed from "
                                + fromGroup.getDisplayName()
                                + " and added to "
@@ -538,8 +554,7 @@ public final class PermCommand implements TabExecutor {
             plugin.db.save(group);
             sender.sendMessage("Set priority of group " + groupName
                                + " to " + prio);
-            plugin.updateVersion();
-            plugin.refreshPermissionsAsync();
+            plugin.updateVersionAndRefresh();
             return true;
         } else if ("setparent".equals(subcmd) && args.length == 3) {
             String parentName = args[2];
@@ -554,8 +569,7 @@ public final class PermCommand implements TabExecutor {
             sender.sendMessage("Set parent of group of "
                                + group.getDisplayName()
                                + " to " + parentGroup.getDisplayName());
-            plugin.updateVersion();
-            plugin.refreshPermissionsAsync();
+            plugin.updateVersionAndRefresh();
             return true;
         } else if ("resetparent".equals(subcmd) && args.length == 2) {
             if (group.getParent() == null) {
@@ -566,8 +580,7 @@ public final class PermCommand implements TabExecutor {
             plugin.db.save(group);
             sender.sendMessage("Removed parent of group of "
                                + group.getDisplayName());
-            plugin.updateVersion();
-            plugin.refreshPermissionsAsync();
+            plugin.updateVersionAndRefresh();
             return true;
         } else {
             sender.sendMessage("Usage");
@@ -753,25 +766,18 @@ public final class PermCommand implements TabExecutor {
     }
 
     private void levelList(CommandSender sender) {
-        int level = 0;
-        int count = 0;
-        List<Component> list = new ArrayList<>();
+        Map<Integer, Integer> map = new TreeMap<>();
         for (SQLLevel row : plugin.cache.levels) {
-            if (row.getLevel() != level) {
-                if (count > 0) {
-                    list.add(join(noSeparators(), text(level, YELLOW), text(":", DARK_GRAY), text(count, WHITE)));
-                }
-                level = row.getLevel();
-                count = 1;
-            } else {
-                count += 1;
-            }
+            int count = map.getOrDefault(row.getLevel(), 0);
+            map.put(row.getLevel(), count + 1);
         }
-        if (count > 0) {
-            list.add(join(noSeparators(), text(level, YELLOW), text(":", DARK_GRAY), text(count, WHITE)));
+        if (map.isEmpty()) throw new CommandWarn("No levels to show!");
+        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
+            final int level = entry.getKey();
+            final int count = entry.getValue();
+            sender.sendMessage(join(noSeparators(), text("[" + level + "] ", GRAY), text(count, WHITE)));
         }
-        if (list.isEmpty()) throw new CommandWarn("No levels to show!");
-        sender.sendMessage(join(separator(space()), list));
+        sender.sendMessage(text("Total " + map.size() + " levels, " + plugin.cache.levels.size() + " entries"));
     }
 
     private boolean levelInfo(CommandSender sender, String[] args) {
@@ -791,6 +797,79 @@ public final class PermCommand implements TabExecutor {
                                     space(),
                                     text((row.getDescription() != null ? row.getDescription() : ""), GRAY, ITALIC)));
         }
+        return true;
+    }
+
+    private boolean levelSet(CommandSender sender, String[] args) {
+        if (args.length != 2 && args.length != 3) return false;
+        final int level = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
+        final String permission = args[1];
+        final boolean value = args.length >= 3
+            ? CommandArgCompleter.requireBoolean(args[2])
+            : true;
+        SQLLevel theRow = null;
+        for (SQLLevel row : plugin.cache.levels) {
+            if (row.getLevel() == level && row.getPermission().equalsIgnoreCase(permission)) {
+                if (value == row.isValue()) {
+                    throw new CommandWarn("Level " + level + " already sets " + permission + " to " + value);
+                }
+                theRow = row;
+                break;
+            }
+        }
+        if (theRow != null) {
+            theRow.setValue(value);
+            plugin.db.updateAsync(theRow, r -> {
+                    plugin.updateVersionAndRefresh();
+                    sender.sendMessage(text("Level " + level + " now sets " + permission + " to " + value, AQUA));
+                });
+        } else {
+            theRow = new SQLLevel(level, permission, value);
+            plugin.db.insertAsync(theRow, r -> {
+                    plugin.updateVersionAndRefresh();
+                    sender.sendMessage(text("Level " + level + " now sets " + permission + " to " + value, AQUA));
+                });
+        }
+        return true;
+    }
+
+    private boolean levelUnset(CommandSender sender, String[] args) {
+        if (args.length != 2) return false;
+        final int level = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
+        final String permission = args[1];
+        SQLLevel theRow = null;
+        for (SQLLevel row : plugin.cache.levels) {
+            if (row.getLevel() == level && row.getPermission().equalsIgnoreCase(permission)) {
+                theRow = row;
+                break;
+            }
+        }
+        if (theRow == null) {
+            throw new CommandWarn("Level " + level + " does not set " + permission);
+        }
+        plugin.db.deleteAsync(theRow, r -> {
+                plugin.updateVersionAndRefresh();
+                sender.sendMessage(text("Level " + level + " no longer sets " + permission, AQUA));
+            });
+        return true;
+    }
+
+    private boolean levelFind(CommandSender sender, String[] args) {
+        if (args.length != 1) return false;
+        String term = args[0];
+        String lower = term.toLowerCase();
+        int total = 0;
+        for (SQLLevel row : plugin.cache.levels) {
+            if (row.getPermission().toLowerCase().contains(lower)) {
+                boolean value = row.isValue();
+                sender.sendMessage(text((value ? "+" : "-")
+                                        + " [" + row.getLevel() + "]"
+                                        + " " + row.getPermission(),
+                                        value ? GREEN : RED));
+                total += 1;
+            }
+        }
+        if (total == 0) throw new CommandWarn("Not found: " + term);
         return true;
     }
 
@@ -854,8 +933,7 @@ public final class PermCommand implements TabExecutor {
         }
         plugin.db.find(SQLLevel.class).delete();
         plugin.db.insert(rows);
-        plugin.updateVersion();
-        plugin.refreshPermissionsSync();
+        plugin.updateVersionAndRefresh();
         sender.sendMessage(text(rows.size() + " level lines parsed", YELLOW));
     }
 

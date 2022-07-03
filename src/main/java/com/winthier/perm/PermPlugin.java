@@ -123,8 +123,12 @@ public final class PermPlugin extends JavaPlugin {
             if (version == null) version = new SQLVersion("Perm");
         }
         version.setNow();
-        db.saveAsync(version, null);
-        broadcastRefresh();
+        db.saveAsync(version, r -> broadcastRefresh());
+    }
+
+    protected void updateVersionAndRefresh() {
+        updateVersion();
+        refreshPermissionsAsync();
     }
 
     protected List<SQLPermission> loadLocalPermissions() {
@@ -307,8 +311,7 @@ public final class PermPlugin extends JavaPlugin {
             row.setValue(value);
             db.save(row);
         }
-        updateVersion();
-        refreshPermissionsAsync();
+        updateVersionAndRefresh();
         return true;
     }
 
@@ -332,8 +335,7 @@ public final class PermPlugin extends JavaPlugin {
             row.setValue(value);
             db.save(row);
         }
-        updateVersion();
-        refreshPermissionsAsync();
+        updateVersionAndRefresh();
         return true;
     }
 
@@ -354,8 +356,7 @@ public final class PermPlugin extends JavaPlugin {
         } else {
             db.delete(row);
         }
-        updateVersion();
-        refreshPermissionsAsync();
+        updateVersionAndRefresh();
         return true;
     }
 
