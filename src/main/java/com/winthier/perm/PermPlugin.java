@@ -1,7 +1,7 @@
 package com.winthier.perm;
 
 import com.cavetale.core.connect.Connect;
-import com.winthier.perm.event.PlayerPermissionUpdateEvent;
+import com.cavetale.core.event.perm.PlayerPermissionUpdateEvent;
 import com.winthier.perm.rank.Rank;
 import com.winthier.perm.sql.SQLGroup;
 import com.winthier.perm.sql.SQLLevel;
@@ -251,7 +251,8 @@ public final class PermPlugin extends JavaPlugin {
                 Bukkit.getScheduler().runTask(this, () -> {
                         player.updateCommands();
                         if (!player.isOnline()) return;
-                        new PlayerPermissionUpdateEvent(player, oldPerms, perms).call();
+                        new com.winthier.perm.event.PlayerPermissionUpdateEvent(player, oldPerms, perms).call();
+                        new PlayerPermissionUpdateEvent(player, oldPerms, perms).callEvent();
                     });
             }
         }

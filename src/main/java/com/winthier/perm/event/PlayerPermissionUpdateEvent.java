@@ -14,12 +14,15 @@ import org.bukkit.event.player.PlayerEvent;
 /**
  * Called whenever a player's permissions have been updated, for any
  * reason.
+ * @deprecated
+ * Use com.cavetale.core.event.perm.PlayerPermissionUpdateEvent
  *
  * PermPlugin will call this on every player refresh if something
  * changed, but avoid if this is the initial setup as it will usually
  * coincide with PlayerJoin or PluginEnable anyway.
+ *
  */
-@Getter
+@Getter @Deprecated
 public final class PlayerPermissionUpdateEvent extends PlayerEvent {
     @NonNull private Map<String, Boolean> oldPermissions;
     @NonNull private Map<String, Boolean> newPermissions;
