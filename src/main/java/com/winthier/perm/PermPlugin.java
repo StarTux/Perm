@@ -71,10 +71,10 @@ public final class PermPlugin extends JavaPlugin {
             String groupPerm = "group." + rank.getKey();
             String rankPerm = "rank." + rank.getKey();
             Permission groupPermission = new Permission(groupPerm,
-                                                        "Member of " + rank.getDisplayName(),
+                                                        "Member of " + rank.getKey(),
                                                         PermissionDefault.FALSE);
             Permission rankPermission = new Permission(rankPerm,
-                                                       "Assigned member of " + rank.getDisplayName(),
+                                                       "Assigned member of " + rank.getKey(),
                                                        PermissionDefault.FALSE,
                                                        Map.of(groupPerm, true));
             Bukkit.getPluginManager().removePermission(groupPerm);
