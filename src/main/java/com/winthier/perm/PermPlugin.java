@@ -2,7 +2,7 @@ package com.winthier.perm;
 
 import com.cavetale.core.connect.Connect;
 import com.cavetale.core.event.perm.PlayerPermissionUpdateEvent;
-import com.winthier.perm.rank.Rank;
+import com.cavetale.core.perm.Rank;
 import com.winthier.perm.sql.SQLGroup;
 import com.winthier.perm.sql.SQLLevel;
 import com.winthier.perm.sql.SQLMember;
