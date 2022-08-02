@@ -251,7 +251,6 @@ public final class PermPlugin extends JavaPlugin {
                 Bukkit.getScheduler().runTask(this, () -> {
                         player.updateCommands();
                         if (!player.isOnline()) return;
-                        new com.winthier.perm.event.PlayerPermissionUpdateEvent(player, oldPerms, perms).call();
                         new PlayerPermissionUpdateEvent(player, oldPerms, perms).callEvent();
                     });
             }
