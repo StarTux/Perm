@@ -114,6 +114,9 @@ public final class Cache {
             if (levelRow.getLevel() > playerLevel) break;
             perms.put(levelRow.getPermission(), levelRow.isValue());
         }
+        for (int lvl = 1; lvl <= playerLevel; lvl += 1) {
+            perms.put("tier." + lvl, true);
+        }
         // Groups
         Set<String> assignedGroups = findAssignedGroups(uuid);
         Map<String, Boolean> groupPerms = findGroupPerms(assignedGroups);
