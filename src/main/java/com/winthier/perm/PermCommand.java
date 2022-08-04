@@ -51,43 +51,43 @@ import static net.kyori.adventure.text.format.TextDecoration.*;
 public final class PermCommand implements TabExecutor {
     private final PermPlugin plugin;
     private CommandNode rootNode;
-    private CommandNode levelNode;
+    private CommandNode tierNode;
     private static final CommandArgCompleter COMPLETE_PERMS = CommandArgCompleter
         .supplyStream(() -> Bukkit.getPluginManager().getPermissions().stream().map(Permission::getName));
 
     protected PermCommand(final PermPlugin plugin) {
         this.plugin = plugin;
         rootNode = new CommandNode("perm");
-        levelNode = rootNode.addChild("level")
-            .description("Level commands");
-        levelNode.addChild("list").denyTabCompletion()
-            .description("List levels")
-            .senderCaller(this::levelList);
-        levelNode.addChild("info").arguments("<level>")
-            .description("Print level info")
+        tierNode = rootNode.addChild("tier")
+            .description("Tier commands");
+        tierNode.addChild("list").denyTabCompletion()
+            .description("List tiers")
+            .senderCaller(this::tierList);
+        tierNode.addChild("info").arguments("<tier>")
+            .description("Print tier info")
             .completers(CommandArgCompleter.integer(i -> i >= 0))
-            .senderCaller(this::levelInfo);
-        levelNode.addChild("set").arguments("<level> <permission> [value]")
-            .description("Set level permission")
+            .senderCaller(this::tierInfo);
+        tierNode.addChild("set").arguments("<tier> <permission> [value]")
+            .description("Set tier permission")
             .completers(CommandArgCompleter.integer(i -> i >= 0),
                         COMPLETE_PERMS,
                         CommandArgCompleter.BOOLEAN)
-            .senderCaller(this::levelSet);
-        levelNode.addChild("unset").arguments("<level> <permission>")
-            .description("Unset level permission")
+            .senderCaller(this::tierSet);
+        tierNode.addChild("unset").arguments("<tier> <permission>")
+            .description("Unset tier permission")
             .completers(CommandArgCompleter.integer(i -> i >= 0),
                         COMPLETE_PERMS)
-            .senderCaller(this::levelUnset);
-        levelNode.addChild("find").arguments("<permission>")
-            .description("Find level permission")
+            .senderCaller(this::tierUnset);
+        tierNode.addChild("find").arguments("<permission>")
+            .description("Find tier permission")
             .completers(COMPLETE_PERMS)
-            .senderCaller(this::levelFind);
-        levelNode.addChild("tofile").denyTabCompletion()
-            .description("Dump levels to file")
-            .senderCaller(this::levelToFile);
-        levelNode.addChild("fromfile").denyTabCompletion()
-            .description("Load levels from file")
-            .senderCaller(this::levelFromFile);
+            .senderCaller(this::tierFind);
+        tierNode.addChild("tofile").denyTabCompletion()
+            .description("Dump tiers to file")
+            .senderCaller(this::tierToFile);
+        tierNode.addChild("fromfile").denyTabCompletion()
+            .description("Load tiers from file")
+            .senderCaller(this::tierFromFile);
     }
 
     @Override
@@ -107,7 +107,7 @@ public final class PermCommand implements TabExecutor {
         case "group": return groupCommand(sender, argl(args));
         case "list": return listCommand(sender, argl(args));
         case "local": return localCommand(sender, argl(args));
-        case "level": return levelNode.call(new CommandContext(sender, command, label, args), argl(args));
+        case "tier": return tierNode.call(new CommandContext(sender, command, label, args), argl(args));
         default:
             return false;
         }
@@ -299,16 +299,16 @@ public final class PermCommand implements TabExecutor {
                                     + " extra=" + extraRanks,
                                     YELLOW));
             return true;
-        } else if ("level".equals(subcmd) && args.length == 2) {
+        } else if ("tier".equals(subcmd) && args.length == 2) {
             sender.sendMessage(text(target.name + " has"
-                                    + " level " + plugin.getPlayerLevel(target.uuid)
+                                    + " tier " + plugin.getPlayerLevel(target.uuid)
                                     + " progress " + plugin.getPlayerLevelProgress(target.uuid),
                                     YELLOW));
             return true;
-        } else if ("addlevel".equals(subcmd) && args.length == 2) {
+        } else if ("addtier".equals(subcmd) && args.length == 2) {
             plugin.addPlayerLevelProgress(target.uuid, () -> {
                     sender.sendMessage(text(target.name + " now has"
-                                            + " level " + plugin.getPlayerLevel(target.uuid)
+                                            + " tier " + plugin.getPlayerLevel(target.uuid)
                                             + " progress " + plugin.getPlayerLevelProgress(target.uuid),
                                             YELLOW));
                 });
@@ -335,10 +335,10 @@ public final class PermCommand implements TabExecutor {
                                + " - Set sole player group");
             sender.sendMessage("/perm player <name> replacegroup <from> <to>"
                                + " - Replace player group");
-            sender.sendMessage("/perm player <name> level"
-                               + " - View player level");
-            sender.sendMessage("/perm player <name> addlevel"
-                               + " - Increase player level progress");
+            sender.sendMessage("/perm player <name> tier"
+                               + " - View player tier");
+            sender.sendMessage("/perm player <name> addtier"
+                               + " - Increase player tier progress");
             return true;
         }
     }
@@ -668,7 +668,7 @@ public final class PermCommand implements TabExecutor {
         String cmd = args[0];
         String arg = args[args.length - 1];
         if (args.length == 1) {
-            return contains(arg, Stream.of("player", "group", "list", "refresh", "level"));
+            return contains(arg, Stream.of("player", "group", "list", "refresh", "tier"));
         }
         switch (cmd) {
         case "list":
@@ -689,7 +689,7 @@ public final class PermCommand implements TabExecutor {
                                           "groups",
                                           "addgroup", "removegroup",
                                           "setgroup", "replacegroup",
-                                          "info", "level", "addlevel"));
+                                          "info", "tier", "addtier"));
             }
             String sub = args[2];
             if (in(sub, "addgroup", "setgroup")) {
@@ -759,36 +759,36 @@ public final class PermCommand implements TabExecutor {
             }
             return Collections.emptyList();
         }
-        case "level": return levelNode.complete(new CommandContext(sender, command, alias, args), argl(args));
+        case "tier": return tierNode.complete(new CommandContext(sender, command, alias, args), argl(args));
         default:
             return null;
         }
     }
 
-    private void levelList(CommandSender sender) {
+    private void tierList(CommandSender sender) {
         Map<Integer, Integer> map = new TreeMap<>();
         for (SQLLevel row : plugin.cache.levels) {
             int count = map.getOrDefault(row.getLevel(), 0);
             map.put(row.getLevel(), count + 1);
         }
-        if (map.isEmpty()) throw new CommandWarn("No levels to show!");
+        if (map.isEmpty()) throw new CommandWarn("No tiers to show!");
         for (Map.Entry<Integer, Integer> entry : map.entrySet()) {
-            final int level = entry.getKey();
+            final int tier = entry.getKey();
             final int count = entry.getValue();
-            sender.sendMessage(join(noSeparators(), text("[" + level + "] ", GRAY), text(count, WHITE)));
+            sender.sendMessage(join(noSeparators(), text("[" + tier + "] ", GRAY), text(count, WHITE)));
         }
-        sender.sendMessage(text("Total " + map.size() + " levels, " + plugin.cache.levels.size() + " entries"));
+        sender.sendMessage(text("Total " + map.size() + " tiers, " + plugin.cache.levels.size() + " entries"));
     }
 
-    private boolean levelInfo(CommandSender sender, String[] args) {
+    private boolean tierInfo(CommandSender sender, String[] args) {
         if (args.length != 1) return false;
-        int level = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
+        int tier = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
         List<SQLLevel> rows = new ArrayList<>();
         for (SQLLevel row : plugin.cache.levels) {
-            if (row.getLevel() == level) rows.add(row);
+            if (row.getLevel() == tier) rows.add(row);
         }
-        if (rows.isEmpty()) throw new CommandWarn("Nothing to show for level " + level);
-        sender.sendMessage(join(noSeparators(), text("Info for level "), Glyph.toComponent("" + level)));
+        if (rows.isEmpty()) throw new CommandWarn("Nothing to show for tier " + tier);
+        sender.sendMessage(join(noSeparators(), text("Info for tier "), Glyph.toComponent("" + tier)));
         for (SQLLevel row : rows) {
             sender.sendMessage(join(noSeparators(),
                                     (row.isValue() ? text("+", AQUA) : text("-", RED)),
@@ -800,18 +800,18 @@ public final class PermCommand implements TabExecutor {
         return true;
     }
 
-    private boolean levelSet(CommandSender sender, String[] args) {
+    private boolean tierSet(CommandSender sender, String[] args) {
         if (args.length != 2 && args.length != 3) return false;
-        final int level = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
+        final int tier = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
         final String permission = args[1];
         final boolean value = args.length >= 3
             ? CommandArgCompleter.requireBoolean(args[2])
             : true;
         SQLLevel theRow = null;
         for (SQLLevel row : plugin.cache.levels) {
-            if (row.getLevel() == level && row.getPermission().equalsIgnoreCase(permission)) {
+            if (row.getLevel() == tier && row.getPermission().equalsIgnoreCase(permission)) {
                 if (value == row.isValue()) {
-                    throw new CommandWarn("Level " + level + " already sets " + permission + " to " + value);
+                    throw new CommandWarn("Tier " + tier + " already sets " + permission + " to " + value);
                 }
                 theRow = row;
                 break;
@@ -821,40 +821,40 @@ public final class PermCommand implements TabExecutor {
             theRow.setValue(value);
             plugin.db.updateAsync(theRow, r -> {
                     plugin.updateVersionAndRefresh();
-                    sender.sendMessage(text("Level " + level + " now sets " + permission + " to " + value, AQUA));
+                    sender.sendMessage(text("Tier " + tier + " now sets " + permission + " to " + value, AQUA));
                 });
         } else {
-            theRow = new SQLLevel(level, permission, value);
+            theRow = new SQLLevel(tier, permission, value);
             plugin.db.insertAsync(theRow, r -> {
                     plugin.updateVersionAndRefresh();
-                    sender.sendMessage(text("Level " + level + " now sets " + permission + " to " + value, AQUA));
+                    sender.sendMessage(text("Tier " + tier + " now sets " + permission + " to " + value, AQUA));
                 });
         }
         return true;
     }
 
-    private boolean levelUnset(CommandSender sender, String[] args) {
+    private boolean tierUnset(CommandSender sender, String[] args) {
         if (args.length != 2) return false;
-        final int level = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
+        final int tier = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
         final String permission = args[1];
         SQLLevel theRow = null;
         for (SQLLevel row : plugin.cache.levels) {
-            if (row.getLevel() == level && row.getPermission().equalsIgnoreCase(permission)) {
+            if (row.getLevel() == tier && row.getPermission().equalsIgnoreCase(permission)) {
                 theRow = row;
                 break;
             }
         }
         if (theRow == null) {
-            throw new CommandWarn("Level " + level + " does not set " + permission);
+            throw new CommandWarn("Tier " + tier + " does not set " + permission);
         }
         plugin.db.deleteAsync(theRow, r -> {
                 plugin.updateVersionAndRefresh();
-                sender.sendMessage(text("Level " + level + " no longer sets " + permission, AQUA));
+                sender.sendMessage(text("Tier " + tier + " no longer sets " + permission, AQUA));
             });
         return true;
     }
 
-    private boolean levelFind(CommandSender sender, String[] args) {
+    private boolean tierFind(CommandSender sender, String[] args) {
         if (args.length != 1) return false;
         String term = args[0];
         String lower = term.toLowerCase();
@@ -873,15 +873,15 @@ public final class PermCommand implements TabExecutor {
         return true;
     }
 
-    private void levelToFile(CommandSender sender) {
+    private void tierToFile(CommandSender sender) {
         plugin.getDataFolder().mkdirs();
-        File file = new File(plugin.getDataFolder(), "levels.txt");
+        File file = new File(plugin.getDataFolder(), "tiers.txt");
         int lineCount = 0;
         try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
-            int level = -1;
+            int tier = -1;
             for (SQLLevel row : plugin.cache.levels) {
-                if (row.getLevel() != level) {
-                    level = row.getLevel();
+                if (row.getLevel() != tier) {
+                    tier = row.getLevel();
                     out.println("");
                     out.println("" + row.getLevel());
                     out.println("");
@@ -899,12 +899,12 @@ public final class PermCommand implements TabExecutor {
         sender.sendMessage(text(lineCount + " lines written to " + file, YELLOW));
     }
 
-    private void levelFromFile(CommandSender sender) {
-        File file = new File(plugin.getDataFolder(), "levels.txt");
+    private void tierFromFile(CommandSender sender) {
+        File file = new File(plugin.getDataFolder(), "tiers.txt");
         if (!file.exists()) throw new CommandWarn("File not found: " + file);
         List<SQLLevel> rows = new ArrayList<>();
         try (BufferedReader in = new BufferedReader(new FileReader(file))) {
-            int level = 0;
+            int tier = 0;
             while (true) {
                 String line = in.readLine();
                 if (line == null) break;
@@ -917,12 +917,12 @@ public final class PermCommand implements TabExecutor {
                 if (line.isEmpty()) continue;
                 String[] tokens = line.split(" ", 3);
                 if (tokens.length == 1) {
-                    level = CommandArgCompleter.requireInt(tokens[0], i -> i >= 0);
+                    tier = CommandArgCompleter.requireInt(tokens[0], i -> i >= 0);
                 } else {
                     if (tokens.length < 2) throw new CommandWarn("Invalid line: " + line);
                     boolean value = tokens[0].equals("+") ? true : false;
                     String permission = tokens[1];
-                    SQLLevel row = new SQLLevel(level, permission, value);
+                    SQLLevel row = new SQLLevel(tier, permission, value);
                     if (tokens.length >= 3) row.setDescription(tokens[2]);
                     rows.add(row);
                 }
@@ -934,7 +934,7 @@ public final class PermCommand implements TabExecutor {
         plugin.db.find(SQLLevel.class).delete();
         plugin.db.insert(rows);
         plugin.updateVersionAndRefresh();
-        sender.sendMessage(text(rows.size() + " level lines parsed", YELLOW));
+        sender.sendMessage(text(rows.size() + " tier lines parsed", YELLOW));
     }
 
     private static String[] argl(String[] args) {

@@ -21,7 +21,7 @@ commands:
       /perm group <group> ... - Group settings
       /perm refresh - Refresh permission cache
       /perm list <what> ... - List things
-      /perm level ... - Level commands
+      /perm tier ... - Tier commands
 
   tier:
     description: View tier list
