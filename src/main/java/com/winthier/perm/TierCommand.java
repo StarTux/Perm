@@ -62,21 +62,26 @@ public final class TierCommand extends AbstractCommand<PermPlugin> {
                                (text("Tier up by completing tutorials and quests")
                                 .clickEvent(runCommand("/tut"))
                                 .hoverEvent(showText(text("/tut", GREEN))))));
-                Map<Integer, List<Component>> descriptions = new TreeMap<>();
+                Map<Integer, List<SQLLevel>> tierMap = new TreeMap<>();
                 for (SQLLevel row : plugin.cache.levels) {
                     if (row.getDescription() == null) continue;
-                    Component line = Emoji.replaceText(row.getDescription(), GlyphPolicy.HIDDEN, false).asComponent();
-                    descriptions.computeIfAbsent(row.getLevel(), i -> new ArrayList<>()).add(line);
+                    tierMap.computeIfAbsent(row.getLevel(), i -> new ArrayList<>()).add(row);
                 }
-                List<Integer> levelList = new ArrayList<>(descriptions.keySet());
+                List<Integer> levelList = new ArrayList<>(tierMap.keySet());
                 Collections.sort(levelList);
                 for (int level : levelList) {
+                    List<SQLLevel> rows = tierMap.get(level);
+                    rows.sort((a, b) -> Integer.compare(a.getId(), b.getId()));
+                    List<Component> descriptions = new ArrayList<>(rows.size());
+                    for (SQLLevel row : rows) {
+                        descriptions.add(Emoji.replaceText(row.getDescription(), GlyphPolicy.HIDDEN, false).asComponent());
+                    }
                     pages.add(join(noSeparators(),
                                    text(tiny("tier "), DARK_GRAY),
                                    Glyph.toComponent("" + level),
                                    newline(),
                                    newline(),
-                                   join(separator(newline()), descriptions.get(level))));
+                                   join(separator(newline()), descriptions)));
                 }
                 meta.pages(pages);
                 meta.author(text("Cavetale"));
