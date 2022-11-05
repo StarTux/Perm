@@ -100,7 +100,7 @@ public final class PermCommand implements TabExecutor {
         case "refresh": {
             if (args.length != 1) return false;
             plugin.refreshPermissionsAsync();
-            sender.sendMessage("Permissions refreshed.");
+            sender.sendMessage(text("Permissions refreshed", AQUA));
             return true;
         }
         case "player": return playerCommand(sender, argl(args));
@@ -128,20 +128,16 @@ public final class PermCommand implements TabExecutor {
         if ("get".equals(subcmd) && args.length == 3) {
             String perm = args[2];
             Boolean value = plugin.cache.findPlayerPerms(target.uuid).get(perm);
-            sender.sendMessage(String.format("Setting for %s of %s: %s",
-                                             target.name, perm, value));
+            sender.sendMessage(text(String.format("Setting for %s of %s: %s", target.name, perm, value), AQUA));
             return true;
         } else if ("show".equals(subcmd) && (args.length == 2 || args.length == 3)) {
             String pattern = args.length >= 3
                 ? args[2]
                 : null;
             if (pattern == null) {
-                sender.sendMessage("Declared permissions of "
-                                   + target.name + ":");
+                sender.sendMessage(text("Declared permissions of " + target.name + ":", AQUA));
             } else {
-                sender.sendMessage("Declared permissions of "
-                                   + target.name + " matching "
-                                   + pattern + ":");
+                sender.sendMessage(text("Declared permissions of " + target.name + " matching " + pattern + ":", AQUA));
             }
             String entityName = target.uuid.toString();
             int count = 0;
@@ -153,19 +149,16 @@ public final class PermCommand implements TabExecutor {
                     count += 1;
                 }
             }
-            sender.sendMessage("Total " + count);
+            sender.sendMessage(text("Total " + count, AQUA));
             return true;
         } else if ("dump".equals(subcmd) && (args.length == 2 || args.length == 3)) {
             String pattern = args.length >= 3
                 ? args[2]
                 : null;
             if (pattern == null) {
-                sender.sendMessage("All permissions of "
-                                   + target.name + ":");
+                sender.sendMessage(text("All permissions of " + target.name + ":", AQUA));
             } else {
-                sender.sendMessage("All permissions of "
-                                   + target.name + " matching "
-                                   + pattern + ":");
+                sender.sendMessage(text("All permissions of " + target.name + " matching " + pattern + ":", AQUA));
             }
             int count = 0;
             for (Map.Entry<String, Boolean> entry : plugin.cache.findPlayerPerms(target.uuid).entrySet()) {
@@ -175,24 +168,19 @@ public final class PermCommand implements TabExecutor {
                     count += 1;
                 }
             }
-            sender.sendMessage("Total " + count);
+            sender.sendMessage(text("Total " + count, AQUA));
             return true;
         } else if ("has".equals(subcmd) && args.length == 3) {
             String perm = args[2];
             Player player = plugin.getServer().getPlayer(target.uuid);
             if (player == null) {
-                sender.sendMessage(target.name + " is not online!");
+                sender.sendMessage(text(target.name + " is not online!", RED));
                 return true;
             }
-            sender.sendMessage(String
-                               .format("%s.hasPermission(%s) = %s",
-                                       player.getName(),
-                                       perm,
-                                       player.hasPermission(perm)));
+            sender.sendMessage(text(String.format("%s.hasPermission(%s) = %s", player.getName(), perm, player.hasPermission(perm)), AQUA));
             return true;
         } else if ("groups".equals(subcmd) && args.length == 2) {
-            sender.sendMessage(target.name + " is in groups: "
-                               + plugin.findPlayerGroups(target.uuid));
+            sender.sendMessage(text(target.name + " is in groups: " + plugin.findPlayerGroups(target.uuid), AQUA));
             return true;
         } else if ("set".equals(subcmd)
                    && (args.length == 3 || args.length == 4)) {
@@ -201,52 +189,46 @@ public final class PermCommand implements TabExecutor {
                 ? Boolean.parseBoolean(args[3])
                 : true;
             plugin.setPlayerPerm(target.uuid, perm, value);
-            sender.sendMessage(perm + " set to " + value
-                               + " for " + target.name);
+            sender.sendMessage(text(perm + " set to " + value + " for " + target.name, GREEN));
             return true;
         } else if ("unset".equals(subcmd) && args.length == 3) {
             String perm = args[2];
             if (plugin.setPlayerPerm(target.uuid, perm, null)) {
-                sender.sendMessage(perm + " unset for " + target.name);
+                sender.sendMessage(text(perm + " unset for " + target.name, YELLOW));
             } else {
-                sender.sendMessage(target.name + " does not set " + perm);
+                sender.sendMessage(text(target.name + " does not set " + perm, RED));
             }
             return true;
         } else if ("addgroup".equals(subcmd) && args.length == 3) {
             String groupName = args[2];
             if (plugin.cache.findGroup(groupName) == null) {
-                sender.sendMessage("Group not found: " + groupName);
+                sender.sendMessage(text("Group not found: " + groupName, RED));
                 return true;
             }
             if (plugin.setMembership(target.uuid, groupName, true)) {
-                sender.sendMessage(target.name + " added to group "
-                                   + groupName);
+                sender.sendMessage(text(target.name + " added to group " + groupName, GREEN));
             } else {
-                sender.sendMessage(target.name + " already in group "
-                                   + groupName);
+                sender.sendMessage(text(target.name + " already in group " + groupName, RED));
             }
             return true;
         } else if ("removegroup".equals(subcmd) && args.length == 3) {
             String groupName = args[2];
             if (plugin.setMembership(target.uuid, groupName, false)) {
-                sender.sendMessage(target.name + " removed from group "
-                                   + groupName);
+                sender.sendMessage(text(target.name + " removed from group " + groupName, YELLOW));
             } else {
-                sender.sendMessage(target.name + " is not in group "
-                                   + groupName);
+                sender.sendMessage(text(target.name + " is not in group " + groupName, RED));
             }
             return true;
         } else if ("setgroup".equals(subcmd) && args.length == 3) {
             String groupName = args[2];
             if (plugin.cache.findGroup(groupName) == null) {
-                sender.sendMessage("Group not found: " + groupName);
+                sender.sendMessage(text("Group not found: " + groupName, RED));
                 return true;
             }
             List<String> groups = plugin.findPlayerGroups(target.uuid);
             if (groups.size() == 1
                 && groups.get(0).equals(groupName)) {
-                sender.sendMessage(target.name + " already in group "
-                                   + groupName);
+                sender.sendMessage(text(target.name + " already in group " + groupName, RED));
                 return true;
             }
             plugin.db.find(SQLMember.class)
@@ -254,30 +236,28 @@ public final class PermCommand implements TabExecutor {
                 .delete();
             plugin.db.insert(new SQLMember(target.uuid, groupName));
             plugin.updateVersionAndRefresh();
-            sender.sendMessage(target.name + " now in group " + groupName);
+            sender.sendMessage(text(target.name + " now in group " + groupName, YELLOW));
             return true;
         } else if ("replacegroup".equals(subcmd) && args.length == 4) {
             final String fromGroupArg = args[2];
             final String toGroupArg = args[3];
             SQLGroup fromGroup = plugin.cache.findGroup(fromGroupArg);
             if (fromGroup == null) {
-                sender.sendMessage("Group not found: " + fromGroupArg);
+                sender.sendMessage(text("Group not found: " + fromGroupArg, RED));
                 return true;
             }
             SQLGroup toGroup = plugin.cache.findGroup(toGroupArg);
             if (toGroup == null) {
-                sender.sendMessage("Group not found: " + toGroupArg);
+                sender.sendMessage(text("Group not found: " + toGroupArg, RED));
                 return true;
             }
             List<String> groups = plugin.findPlayerGroups(target.uuid);
             if (!groups.contains(fromGroup.getKey())) {
-                sender.sendMessage(target.name + " not in group "
-                                   + fromGroup.getDisplayName());
+                sender.sendMessage(text(target.name + " not in group " + fromGroup.getDisplayName(), RED));
                 return true;
             }
             if (groups.contains(toGroup.getKey())) {
-                sender.sendMessage(target.name + " already in group "
-                                   + toGroup.getDisplayName());
+                sender.sendMessage(text(target.name + " already in group " + toGroup.getDisplayName(), RED));
                 return true;
             }
             plugin.db.find(SQLMember.class)
@@ -286,59 +266,54 @@ public final class PermCommand implements TabExecutor {
                 .delete();
             plugin.db.insert(new SQLMember(target.uuid, toGroup.getKey()));
             plugin.updateVersionAndRefresh();
-            sender.sendMessage(target.name + " removed from "
-                               + fromGroup.getDisplayName()
-                               + " and added to "
-                               + toGroup.getDisplayName());
+            sender.sendMessage(text(target.name + " removed from " + fromGroup.getDisplayName()
+                                    + " and added to " + toGroup.getDisplayName(), YELLOW));
             return true;
         } else if ("info".equals(subcmd) && args.length == 2) {
             StaffRank staffRank = StaffRank.ofPlayer(target.uuid);
             Set<ExtraRank> extraRanks = ExtraRank.ofPlayer(target.uuid);
-            sender.sendMessage(text("Ranks of " + target.name + ":"
-                                    + " staff=" + staffRank
-                                    + " extra=" + extraRanks,
-                                    YELLOW));
+            sender.sendMessage(text("Ranks of " + target.name + ":" + " staff=" + staffRank + " extra=" + extraRanks, AQUA));
             return true;
         } else if ("tier".equals(subcmd) && args.length == 2) {
             sender.sendMessage(text(target.name + " has"
                                     + " tier " + plugin.getPlayerLevel(target.uuid)
                                     + " progress " + plugin.getPlayerLevelProgress(target.uuid),
-                                    YELLOW));
+                                    AQUA));
             return true;
         } else if ("addtier".equals(subcmd) && args.length == 2) {
             plugin.addPlayerLevelProgress(target.uuid, () -> {
                     sender.sendMessage(text(target.name + " now has"
                                             + " tier " + plugin.getPlayerLevel(target.uuid)
                                             + " progress " + plugin.getPlayerLevelProgress(target.uuid),
-                                            YELLOW));
+                                            GREEN));
                 });
             return true;
         } else {
-            sender.sendMessage("Usage");
-            sender.sendMessage("/perm player <name> get <perm>"
-                               + " - Get stored permission value");
-            sender.sendMessage("/perm player <name> show [pattern]"
-                               + " - List assigned permissions");
-            sender.sendMessage("/perm player <name> dump [pattern]"
-                               + " - List all permissions");
-            sender.sendMessage("/perm player <name> has <perm>"
-                               + " - Bukkit hasPermission check");
-            sender.sendMessage("/perm player <name> set <perm> [value]"
-                               + " - Assign permission");
-            sender.sendMessage("/perm player <name> unset <perm>"
-                               + " - Unassign permission");
-            sender.sendMessage("/perm player <name> addgroup <group>"
-                               + " - Add player to group");
-            sender.sendMessage("/perm player <name> removegroup <group>"
-                               + " - Remove player from group");
-            sender.sendMessage("/perm player <name> setgroup <group>"
-                               + " - Set sole player group");
-            sender.sendMessage("/perm player <name> replacegroup <from> <to>"
-                               + " - Replace player group");
-            sender.sendMessage("/perm player <name> tier"
-                               + " - View player tier");
-            sender.sendMessage("/perm player <name> addtier"
-                               + " - Increase player tier progress");
+            sender.sendMessage(text("Usage", AQUA));
+            sender.sendMessage(text("/perm player <name> get <perm>"
+                                    + " - Get stored permission value", YELLOW));
+            sender.sendMessage(text("/perm player <name> show [pattern]"
+                                    + " - List assigned permissions", YELLOW));
+            sender.sendMessage(text("/perm player <name> dump [pattern]"
+                                    + " - List all permissions", YELLOW));
+            sender.sendMessage(text("/perm player <name> has <perm>"
+                                    + " - Bukkit hasPermission check", YELLOW));
+            sender.sendMessage(text("/perm player <name> set <perm> [value]"
+                                    + " - Assign permission", YELLOW));
+            sender.sendMessage(text("/perm player <name> unset <perm>"
+                                    + " - Unassign permission", YELLOW));
+            sender.sendMessage(text("/perm player <name> addgroup <group>"
+                                    + " - Add player to group", YELLOW));
+            sender.sendMessage(text("/perm player <name> removegroup <group>"
+                                    + " - Remove player from group", YELLOW));
+            sender.sendMessage(text("/perm player <name> setgroup <group>"
+                                    + " - Set sole player group", YELLOW));
+            sender.sendMessage(text("/perm player <name> replacegroup <from> <to>"
+                                    + " - Replace player group", YELLOW));
+            sender.sendMessage(text("/perm player <name> tier"
+                                    + " - View player tier", YELLOW));
+            sender.sendMessage(text("/perm player <name> addtier"
+                                    + " - Increase player tier progress", YELLOW));
             return true;
         }
     }
@@ -352,9 +327,9 @@ public final class PermCommand implements TabExecutor {
                 group = new SQLGroup(groupName.toLowerCase(), 0, groupName, null);
                 plugin.db.save(group);
                 plugin.cache.groups.add(group);
-                sender.sendMessage("Group created: " + groupName);
+                sender.sendMessage(text("Group created: " + groupName, GREEN));
             } else {
-                sender.sendMessage("Group not found: " + groupName);
+                sender.sendMessage(text("Group not found: " + groupName, RED));
             }
             return true;
         }
@@ -428,12 +403,9 @@ public final class PermCommand implements TabExecutor {
                 ? args[2]
                 : null;
             if (pattern == null) {
-                sender.sendMessage("Declared permissions of group "
-                                   + groupName + ":");
+                sender.sendMessage(text("Declared permissions of group " + groupName + ":", AQUA));
             } else {
-                sender.sendMessage("Declared permissions of group "
-                                   + groupName + " matching "
-                                   + pattern + ":");
+                sender.sendMessage(text("Declared permissions of group " + groupName + " matching " + pattern + ":", AQUA));
             }
             int count = 0;
             for (SQLPermission permission : plugin.cache.permissions) {
@@ -444,19 +416,16 @@ public final class PermCommand implements TabExecutor {
                     count += 1;
                 }
             }
-            sender.sendMessage("Total " + count);
+            sender.sendMessage(text("Total " + count, AQUA));
             return true;
         } else if ("dump".equals(subcmd) && (args.length == 2 || args.length == 3)) {
             String pattern = args.length >= 3
                 ? args[2]
                 : null;
             if (pattern == null) {
-                sender.sendMessage("All permissions of group "
-                                   + groupName + ":");
+                sender.sendMessage(text("All permissions of group " + groupName + ":", AQUA));
             } else {
-                sender.sendMessage("All permissions of group "
-                                   + groupName + " matching "
-                                   + pattern + ":");
+                sender.sendMessage(text("All permissions of group " + groupName + " matching " + pattern + ":", AQUA));
             }
             int count = 0;
             for (Map.Entry<String, Boolean> entry : plugin.cache.findGroupPerms(groupName).entrySet()) {
@@ -466,10 +435,10 @@ public final class PermCommand implements TabExecutor {
                     count += 1;
                 }
             }
-            sender.sendMessage("Total " + count);
+            sender.sendMessage(text("Total " + count, AQUA));
             return true;
         } else if ("members".equals(subcmd) && args.length == 2) {
-            sender.sendMessage("Members of group " + groupName + ":");
+            sender.sendMessage(text("Members of group " + groupName + ":", AQUA));
             int count = 0;
             List<Component> lines = new ArrayList<>();
             for (UUID uuid : plugin.findGroupMembers(groupName)) {
@@ -498,48 +467,42 @@ public final class PermCommand implements TabExecutor {
                 ? Boolean.parseBoolean(args[3])
                 : true;
             plugin.setGroupPerm(groupName, perm, value);
-            sender.sendMessage(perm + " set to " + value
-                               + " for group " + groupName);
+            sender.sendMessage(text(perm + " set to " + value + " for group " + groupName, (value ? GREEN : YELLOW)));
             return true;
         } else if ("unset".equals(subcmd) && args.length == 3) {
             String perm = args[2];
             if (plugin.setGroupPerm(groupName, perm, null)) {
-                sender.sendMessage(perm + " unset for group " + groupName);
+                sender.sendMessage(text(perm + " unset for group " + groupName, YELLOW));
             } else {
-                sender.sendMessage("Group " + groupName
-                                   + " does not set " + perm);
+                sender.sendMessage(text("Group " + groupName + " does not set " + perm, RED));
             }
             return true;
         } else if ("add".equals(subcmd) && args.length == 3) {
             String playerName = args[2];
             UUID playerUuid = PlayerCache.uuidForName(playerName);
             if (playerUuid == null) {
-                sender.sendMessage("Player not found: " + playerName);
+                sender.sendMessage(text("Player not found: " + playerName, RED));
                 return true;
             }
             playerName = PlayerCache.nameForUuid(playerUuid);
             if (plugin.setMembership(playerUuid, groupName, true)) {
-                sender.sendMessage(playerName + " added to group "
-                                   + groupName);
+                sender.sendMessage(text(playerName + " added to group " + groupName, GREEN));
             } else {
-                sender.sendMessage(playerName + " already in group "
-                                   + groupName);
+                sender.sendMessage(text(playerName + " already in group " + groupName, RED));
             }
             return true;
         } else if ("remove".equals(subcmd) && args.length == 3) {
             String playerName = args[2];
             UUID playerUuid = PlayerCache.uuidForName(playerName);
             if (playerUuid == null) {
-                sender.sendMessage("Player not found: " + playerName);
+                sender.sendMessage(text("Player not found: " + playerName, RED));
                 return true;
             }
             playerName = PlayerCache.nameForUuid(playerUuid);
             if (plugin.setMembership(playerUuid, groupName, false)) {
-                sender.sendMessage(playerName + " removed from group "
-                                   + groupName);
+                sender.sendMessage(text(playerName + " removed from group " + groupName, YELLOW));
             } else {
-                sender.sendMessage(playerName + " is not in group "
-                                   + groupName);
+                sender.sendMessage(text(playerName + " is not in group " + groupName, RED));
             }
             return true;
         } else if ("setpriority".equals(subcmd) && args.length == 3) {
@@ -547,65 +510,61 @@ public final class PermCommand implements TabExecutor {
             try {
                 prio = Integer.parseInt(args[2]);
             } catch (NumberFormatException nfe) {
-                sender.sendMessage("Not a number: " + args[2]);
+                sender.sendMessage(text("Not a number: " + args[2], RED));
                 return true;
             }
             group.setPriority(prio);
             plugin.db.save(group);
-            sender.sendMessage("Set priority of group " + groupName
-                               + " to " + prio);
+            sender.sendMessage(text("Set priority of group " + groupName + " to " + prio, YELLOW));
             plugin.updateVersionAndRefresh();
             return true;
         } else if ("setparent".equals(subcmd) && args.length == 3) {
             String parentName = args[2];
             SQLGroup parentGroup = plugin.cache.findGroup(parentName);
             if (parentGroup == null) {
-                sender.sendMessage("Group not found: " + parentName);
+                sender.sendMessage(text("Group not found: " + parentName, RED));
                 return true;
             }
             parentName = parentGroup.getKey();
             group.setParent(parentName);
             plugin.db.save(group);
-            sender.sendMessage("Set parent of group of "
-                               + group.getDisplayName()
-                               + " to " + parentGroup.getDisplayName());
+            sender.sendMessage(text("Set parent of group of " + group.getDisplayName() + " to " + parentGroup.getDisplayName(), YELLOW));
             plugin.updateVersionAndRefresh();
             return true;
         } else if ("resetparent".equals(subcmd) && args.length == 2) {
             if (group.getParent() == null) {
-                sender.sendMessage(group.getDisplayName() + " has no parent");
+                sender.sendMessage(text(group.getDisplayName() + " has no parent", RED));
                 return true;
             }
             group.setParent(null);
             plugin.db.save(group);
-            sender.sendMessage("Removed parent of group of "
-                               + group.getDisplayName());
+            sender.sendMessage(text("Removed parent of group of " + group.getDisplayName(), YELLOW));
             plugin.updateVersionAndRefresh();
             return true;
         } else {
-            sender.sendMessage("Usage");
-            sender.sendMessage("/perm group <name> info"
-                               + " - List some information");
-            sender.sendMessage("/perm group <name> get <perm>"
-                               + " - Get stored permission value");
-            sender.sendMessage("/perm group <name> show [pattern]"
-                               + " - List assigned permissions");
-            sender.sendMessage("/perm group <name> dump [pattern]"
-                               + " - List all permissions");
-            sender.sendMessage("/perm group <name> set <perm> [value]"
-                               + " - Assign permission");
-            sender.sendMessage("/perm group <name> unset <perm>"
-                               + " - Unassign permission");
-            sender.sendMessage("/perm group <name> add <player>"
-                               + " - Add player to group");
-            sender.sendMessage("/perm group <name> remove <player>"
-                               + " - Remove player from group");
-            sender.sendMessage("/perm group <name> setpriority <prio>"
-                               + " - Set group priority");
-            sender.sendMessage("/perm group <name> setparent <group>"
-                               + " - Set parent group");
-            sender.sendMessage("/perm group <name> resetparent"
-                               + " - Remove parent group");
+            sender.sendMessage(text("Usage", YELLOW));
+            sender.sendMessage(text("/perm group <name> info"
+                                    + " - List some information", YELLOW));
+            sender.sendMessage(text("/perm group <name> get <perm>"
+                                    + " - Get stored permission value", YELLOW));
+            sender.sendMessage(text("/perm group <name> show [pattern]"
+                                    + " - List assigned permissions", YELLOW));
+            sender.sendMessage(text("/perm group <name> dump [pattern]"
+                                    + " - List all permissions", YELLOW));
+            sender.sendMessage(text("/perm group <name> set <perm> [value]"
+                                    + " - Assign permission", YELLOW));
+            sender.sendMessage(text("/perm group <name> unset <perm>"
+                                    + " - Unassign permission", YELLOW));
+            sender.sendMessage(text("/perm group <name> add <player>"
+                                    + " - Add player to group", YELLOW));
+            sender.sendMessage(text("/perm group <name> remove <player>"
+                                    + " - Remove player from group", YELLOW));
+            sender.sendMessage(text("/perm group <name> setpriority <prio>"
+                                    + " - Set group priority", YELLOW));
+            sender.sendMessage(text("/perm group <name> setparent <group>"
+                                    + " - Set parent group", YELLOW));
+            sender.sendMessage(text("/perm group <name> resetparent"
+                                    + " - Remove parent group", YELLOW));
             return true;
         }
     }
@@ -631,31 +590,31 @@ public final class PermCommand implements TabExecutor {
                         }));
             }
         } else if ("playerperms".equals(subcmd)) {
-            sender.sendMessage("Assigned player permissions:");
+            sender.sendMessage(text("Assigned player permissions:", AQUA));
             int count = 0;
             for (SQLPermission permission : plugin.cache.permissions) {
                 if (permission.isGroup()) continue;
                 final UUID uuid = UUID.fromString(permission.getEntity());
-                String playerName = PlayerCache.nameForUuid(uuid);
-                sender.sendMessage(playerName + ": "
-                                   + permission.getPermission()
-                                   + ": " + permission.isValue());
+                final String playerName = PlayerCache.nameForUuid(uuid);
+                final String perm = permission.getPermission();
+                final boolean value = permission.isValue();
+                sender.sendMessage(text(playerName + ": " + perm + ": " + value, (value ? GREEN : RED)));
                 count += 1;
             }
-            sender.sendMessage("Total " + count);
+            sender.sendMessage(text("Total " + count, AQUA));
         } else {
-            sender.sendMessage("Usage");
-            sender.sendMessage("/perm list groups"
-                               + " - List groups");
-            sender.sendMessage("/perm list playerperms"
-                               + " - List assigned player permissions");
+            sender.sendMessage(text("Usage", AQUA));
+            sender.sendMessage(text("/perm list groups"
+                                    + " - List groups", YELLOW));
+            sender.sendMessage(text("/perm list playerperms"
+                                    + " - List assigned player permissions", YELLOW));
         }
         return true;
     }
 
     protected boolean localCommand(CommandSender sender, String[] args) {
         if (args.length != 0) return false;
-        sender.sendMessage("Local permissions: " + plugin.localPermissionsCache);
+        sender.sendMessage(text("Local permissions: " + plugin.localPermissionsCache, AQUA));
         return true;
     }
 
@@ -777,7 +736,7 @@ public final class PermCommand implements TabExecutor {
             final int count = entry.getValue();
             sender.sendMessage(join(noSeparators(), text("[" + tier + "] ", GRAY), text(count, WHITE)));
         }
-        sender.sendMessage(text("Total " + map.size() + " tiers, " + plugin.cache.levels.size() + " entries"));
+        sender.sendMessage(text("Total " + map.size() + " tiers, " + plugin.cache.levels.size() + " entries", AQUA));
     }
 
     private boolean tierInfo(CommandSender sender, String[] args) {
@@ -821,13 +780,13 @@ public final class PermCommand implements TabExecutor {
             theRow.setValue(value);
             plugin.db.updateAsync(theRow, r -> {
                     plugin.updateVersionAndRefresh();
-                    sender.sendMessage(text("Tier " + tier + " now sets " + permission + " to " + value, AQUA));
+                    sender.sendMessage(text("Tier " + tier + " now sets " + permission + " to " + value, YELLOW));
                 });
         } else {
             theRow = new SQLLevel(tier, permission, value);
             plugin.db.insertAsync(theRow, r -> {
                     plugin.updateVersionAndRefresh();
-                    sender.sendMessage(text("Tier " + tier + " now sets " + permission + " to " + value, AQUA));
+                    sender.sendMessage(text("Tier " + tier + " now sets " + permission + " to " + value, YELLOW));
                 });
         }
         return true;
@@ -849,7 +808,7 @@ public final class PermCommand implements TabExecutor {
         }
         plugin.db.deleteAsync(theRow, r -> {
                 plugin.updateVersionAndRefresh();
-                sender.sendMessage(text("Tier " + tier + " no longer sets " + permission, AQUA));
+                sender.sendMessage(text("Tier " + tier + " no longer sets " + permission, YELLOW));
             });
         return true;
     }
@@ -862,10 +821,8 @@ public final class PermCommand implements TabExecutor {
         for (SQLLevel row : plugin.cache.levels) {
             if (row.getPermission().toLowerCase().contains(lower)) {
                 boolean value = row.isValue();
-                sender.sendMessage(text((value ? "+" : "-")
-                                        + " [" + row.getLevel() + "]"
-                                        + " " + row.getPermission(),
-                                        value ? GREEN : RED));
+                sender.sendMessage(text((value ? "+" : "-") + " [" + row.getLevel() + "]" + " " + row.getPermission(),
+                                        (value ? GREEN : RED)));
                 total += 1;
             }
         }
@@ -896,7 +853,7 @@ public final class PermCommand implements TabExecutor {
             ioe.printStackTrace();
             throw new CommandWarn(ioe.getClass().getName() + " see console");
         }
-        sender.sendMessage(text(lineCount + " lines written to " + file, YELLOW));
+        sender.sendMessage(text(lineCount + " lines written to " + file, AQUA));
     }
 
     private void tierFromFile(CommandSender sender) {
