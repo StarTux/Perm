@@ -87,6 +87,7 @@ public final class TierCommand extends AbstractCommand<PermPlugin> {
                 meta.author(text("Cavetale"));
                 meta.title(text("Tier"));
             });
+        player.closeInventory();
         player.openBook(book);
         PluginPlayerEvent.Name.USE_TIER.call(plugin, player);
     }
