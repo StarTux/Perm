@@ -96,20 +96,25 @@ public final class PermCommand implements TabExecutor {
                              final String label,
                              final String[] args) {
         if (args.length == 0) return false;
-        switch (args[0]) {
-        case "refresh": {
-            if (args.length != 1) return false;
-            plugin.refreshPermissionsAsync();
-            sender.sendMessage(text("Permissions refreshed", AQUA));
+        try {
+            switch (args[0]) {
+            case "refresh": {
+                if (args.length != 1) return false;
+                plugin.refreshPermissionsAsync();
+                sender.sendMessage(text("Permissions refreshed", AQUA));
+                return true;
+            }
+            case "player": return playerCommand(sender, argl(args));
+            case "group": return groupCommand(sender, argl(args));
+            case "list": return listCommand(sender, argl(args));
+            case "local": return localCommand(sender, argl(args));
+            case "tier": return tierNode.call(new CommandContext(sender, command, label, args), argl(args));
+            default:
+                return false;
+            }
+        } catch (CommandWarn warn) {
+            sender.sendMessage(warn.getMessage());
             return true;
-        }
-        case "player": return playerCommand(sender, argl(args));
-        case "group": return groupCommand(sender, argl(args));
-        case "list": return listCommand(sender, argl(args));
-        case "local": return localCommand(sender, argl(args));
-        case "tier": return tierNode.call(new CommandContext(sender, command, label, args), argl(args));
-        default:
-            return false;
         }
     }
 
