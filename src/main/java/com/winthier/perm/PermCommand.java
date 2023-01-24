@@ -68,13 +68,13 @@ public final class PermCommand implements TabExecutor {
             .description("Print tier info")
             .completers(CommandArgCompleter.integer(i -> i >= 0))
             .senderCaller(this::tierInfo);
-        tierNode.addChild("set").arguments("<tier> <permission> [value]")
+        tierNode.addChild("set").arguments("<tier> <permission> [value] [description]")
             .description("Set tier permission")
             .completers(CommandArgCompleter.integer(i -> i >= 0),
                         COMPLETE_PERMS,
                         CommandArgCompleter.BOOLEAN)
             .senderCaller(this::tierSet);
-        tierNode.addChild("unset").arguments("<tier> <permission> [description]")
+        tierNode.addChild("unset").arguments("<tier> <permission>")
             .description("Unset tier permission")
             .completers(CommandArgCompleter.integer(i -> i >= 0),
                         COMPLETE_PERMS)
@@ -766,7 +766,7 @@ public final class PermCommand implements TabExecutor {
     }
 
     private boolean tierSet(CommandSender sender, String[] args) {
-        if (args.length != 2 && args.length != 3) return false;
+        if (args.length < 2) return false;
         final int tier = CommandArgCompleter.requireInt(args[0], i -> i >= 0);
         final String permission = args[1];
         final boolean value = args.length >= 3
