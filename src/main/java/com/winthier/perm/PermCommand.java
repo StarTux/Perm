@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -73,7 +74,7 @@ public final class PermCommand implements TabExecutor {
                         COMPLETE_PERMS,
                         CommandArgCompleter.BOOLEAN)
             .senderCaller(this::tierSet);
-        tierNode.addChild("unset").arguments("<tier> <permission>")
+        tierNode.addChild("unset").arguments("<tier> <permission> [description]")
             .description("Unset tier permission")
             .completers(CommandArgCompleter.integer(i -> i >= 0),
                         COMPLETE_PERMS)
@@ -771,10 +772,13 @@ public final class PermCommand implements TabExecutor {
         final boolean value = args.length >= 3
             ? CommandArgCompleter.requireBoolean(args[2])
             : true;
+        final String description = args.length >= 4
+            ? String.join(" ", Arrays.copyOfRange(args, 3, args.length))
+            : null;
         SQLLevel theRow = null;
         for (SQLLevel row : plugin.cache.levels) {
             if (row.getLevel() == tier && row.getPermission().equalsIgnoreCase(permission)) {
-                if (value == row.isValue()) {
+                if (value == row.isValue() && Objects.equals(description, row.getDescription())) {
                     throw new CommandWarn("Tier " + tier + " already sets " + permission + " to " + value);
                 }
                 theRow = row;
@@ -783,12 +787,13 @@ public final class PermCommand implements TabExecutor {
         }
         if (theRow != null) {
             theRow.setValue(value);
+            theRow.setDescription(description);
             plugin.db.updateAsync(theRow, r -> {
                     plugin.updateVersionAndRefresh();
                     sender.sendMessage(text("Tier " + tier + " now sets " + permission + " to " + value, YELLOW));
                 });
         } else {
-            theRow = new SQLLevel(tier, permission, value);
+            theRow = new SQLLevel(tier, permission, value, description);
             plugin.db.insertAsync(theRow, r -> {
                     plugin.updateVersionAndRefresh();
                     sender.sendMessage(text("Tier " + tier + " now sets " + permission + " to " + value, YELLOW));
@@ -884,8 +889,8 @@ public final class PermCommand implements TabExecutor {
                     if (tokens.length < 2) throw new CommandWarn("Invalid line: " + line);
                     boolean value = tokens[0].equals("+") ? true : false;
                     String permission = tokens[1];
-                    SQLLevel row = new SQLLevel(tier, permission, value);
-                    if (tokens.length >= 3) row.setDescription(tokens[2]);
+                    String description = tokens.length >= 3 ? tokens[2] : null;
+                    SQLLevel row = new SQLLevel(tier, permission, value, description);
                     rows.add(row);
                 }
             }

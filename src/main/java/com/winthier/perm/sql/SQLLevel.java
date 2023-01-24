@@ -17,10 +17,11 @@ public final class SQLLevel implements SQLRow, Comparable<SQLLevel> {
 
     public SQLLevel() { }
 
-    public SQLLevel(final int level, final String permission, final boolean value) {
+    public SQLLevel(final int level, final String permission, final boolean value, final String description) {
         this.level = level;
         this.permission = permission;
         this.value = value;
+        this.description = description;
     }
 
     @Override
