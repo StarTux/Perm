@@ -33,7 +33,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
@@ -44,6 +43,7 @@ import static net.kyori.adventure.text.Component.join;
 import static net.kyori.adventure.text.Component.newline;
 import static net.kyori.adventure.text.Component.space;
 import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.Component.textOfChildren;
 import static net.kyori.adventure.text.JoinConfiguration.noSeparators;
 import static net.kyori.adventure.text.JoinConfiguration.separator;
 import static net.kyori.adventure.text.format.NamedTextColor.*;
@@ -344,27 +344,25 @@ public final class PermCommand implements TabExecutor {
             ? args[1]
             : null;
         if ("info".equals(subcmd) && args.length == 2) {
-            sender.sendMessage(ChatColor.YELLOW + "Group Info");
-            sender.sendMessage(ChatColor.GRAY + "Key: "
-                               + ChatColor.WHITE + group.getKey());
-            sender.sendMessage(ChatColor.GRAY + "Display: "
-                               + ChatColor.WHITE + group.getDisplayName());
-            sender.sendMessage(ChatColor.GRAY + "Members: "
-                               + ChatColor.WHITE
-                               + plugin.findGroupMembers(group.getKey()).size());
-            sender.sendMessage(ChatColor.GRAY + "Prio: "
-                               + ChatColor.WHITE + group.getPriority());
-            StringBuilder sb = new StringBuilder("");
+            sender.sendMessage(text("Group Info", YELLOW));
+            sender.sendMessage(textOfChildren(text("Key: ", GRAY),
+                                              text(group.getKey(), WHITE)));
+            sender.sendMessage(textOfChildren(text("Display: ", GRAY),
+                                              text(group.getDisplayName(), WHITE)));
+            sender.sendMessage(textOfChildren(text("Members: ", GRAY),
+                                              text(plugin.findGroupMembers(group.getKey()).size(), GRAY)));
+            sender.sendMessage(textOfChildren(text("Prio: ", GRAY),
+                                              text(group.getPriority(), WHITE)));
+            List<Component> inherits = new ArrayList<>();
             String warnAboutParent = null;
             String warnAboutPrio = null;
             SQLGroup parentGroup = group;
             int prio = parentGroup.getPriority();
             while (parentGroup != null) {
                 if (parentGroup != group) {
-                    sb.append(" ").append(ChatColor.WHITE)
-                        .append(parentGroup.getKey())
-                        .append(ChatColor.GRAY).append("(")
-                        .append(parentGroup.getPriority() + ")");
+                    inherits.add(space());
+                    inherits.add(text(parentGroup.getKey(), WHITE));
+                    inherits.add(text("(" + parentGroup.getPriority() + ")", GRAY));
                 }
                 if (parentGroup.getParent() != null) {
                     parentGroup = plugin.cache.findGroup(parentGroup.getParent());
@@ -381,18 +379,12 @@ public final class PermCommand implements TabExecutor {
                     break;
                 }
             }
-            sender.sendMessage(ChatColor.GRAY + "Inherit:"
-                               + ChatColor.WHITE + sb.toString());
+            sender.sendMessage(textOfChildren(text("Inherit:", GRAY), join(noSeparators(), inherits)));
             if (warnAboutParent != null) {
-                sender.sendMessage(ChatColor.RED + "Warning: "
-                                   + warnAboutParent
-                                   + " has missing parent.");
+                sender.sendMessage(text("Warning: " + warnAboutParent + " has missing parent", RED));
             }
             if (warnAboutPrio != null) {
-                sender.sendMessage(ChatColor.RED + "Warning: "
-                                   + warnAboutPrio
-                                   + " has priority higher than"
-                                   + " or equal to at least one parent.");
+                sender.sendMessage(text("Warning: " + warnAboutPrio + " has priority higher than or equal to at least one parent", RED));
             }
             return true;
         } else if ("get".equals(subcmd) && args.length == 3) {
