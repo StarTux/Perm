@@ -1,8 +1,11 @@
 package com.winthier.perm;
 
 import com.cavetale.core.perm.Perm;
+import com.winthier.perm.sql.SQLGroup;
 import com.winthier.perm.sql.SQLMember;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -99,5 +102,14 @@ public final class CorePerm implements Perm {
     @Override
     public void addLevelProgress(UUID uuid) {
         plugin.addPlayerLevelProgress(uuid);
+    }
+
+    @Override
+    public List<String> getGroupNames() {
+        List<String> result = new ArrayList<>();
+        for (SQLGroup row : plugin.getCache().groups) {
+            result.add(row.getKey());
+        }
+        return result;
     }
 }
