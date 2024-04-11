@@ -879,7 +879,7 @@ public final class PermCommand implements TabExecutor {
                     tier = CommandArgCompleter.requireInt(tokens[0], i -> i >= 0);
                 } else {
                     if (tokens.length < 2) throw new CommandWarn("Invalid line: " + line);
-                    boolean value = tokens[0].equals("+") ? true : false;
+                    boolean value = tokens[0].equals("+");
                     String permission = tokens[1];
                     String description = tokens.length >= 3 ? tokens[2] : null;
                     SQLLevel row = new SQLLevel(tier, permission, value, description);
