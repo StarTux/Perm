@@ -4,6 +4,7 @@ import com.cavetale.core.command.AbstractCommand;
 import com.cavetale.core.event.player.PluginPlayerEvent;
 import com.cavetale.core.font.Emoji;
 import com.cavetale.core.font.GlyphPolicy;
+import com.cavetale.mytems.Mytems;
 import com.cavetale.mytems.item.font.Glyph;
 import com.winthier.perm.sql.SQLLevel;
 import java.util.ArrayList;
@@ -19,7 +20,9 @@ import org.bukkit.inventory.meta.BookMeta;
 import static com.cavetale.core.font.Unicode.tiny;
 import static net.kyori.adventure.text.Component.join;
 import static net.kyori.adventure.text.Component.newline;
+import static net.kyori.adventure.text.Component.space;
 import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.Component.textOfChildren;
 import static net.kyori.adventure.text.JoinConfiguration.noSeparators;
 import static net.kyori.adventure.text.JoinConfiguration.separator;
 import static net.kyori.adventure.text.event.ClickEvent.runCommand;
@@ -74,7 +77,8 @@ public final class TierCommand extends AbstractCommand<PermPlugin> {
                     rows.sort((a, b) -> Integer.compare(a.getId(), b.getId()));
                     List<Component> descriptions = new ArrayList<>(rows.size());
                     for (SQLLevel row : rows) {
-                        descriptions.add(Emoji.replaceText(row.getDescription(), GlyphPolicy.HIDDEN, false).asComponent());
+                        final var description = Emoji.replaceText(row.getDescription(), GlyphPolicy.HIDDEN, false);
+                        descriptions.add(textOfChildren(Mytems.KITTY_COIN, space(), description));
                     }
                     pages.add(join(noSeparators(),
                                    text(tiny("tier "), DARK_GRAY),
