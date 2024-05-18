@@ -28,6 +28,11 @@ commands:
     permission: perm.tier
     usage: /tier
 
+  togglerank:
+    description: Toggle ranks on/off
+    permission: perm.togglerank
+    usage: /togglerank
+
 permissions:
 
   perm.perm:
@@ -37,3 +42,7 @@ permissions:
   perm.tier:
     description: Use /tier
     default: op
+
+  perm.togglerank:
+    description: Use /togglerank
+    default: false

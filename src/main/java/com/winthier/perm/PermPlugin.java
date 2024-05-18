@@ -41,11 +41,14 @@ public final class PermPlugin extends JavaPlugin {
     protected BukkitRunnable updateTask;
     protected PermCommand permCommand = new PermCommand(this);
     protected TierCommand tierCommand = new TierCommand(this);
+    protected ToggleRankCommand toggleRankCommand = new ToggleRankCommand(this);
     protected EventListener listener = new EventListener(this);
     @Getter protected static PermPlugin instance;
     protected File localPermissionsFile;
     protected List<SQLPermission> localPermissionsCache;
     protected final CorePerm corePerm = new CorePerm(this);
+    private boolean refreshingPermissions;
+    private boolean updatingVersion;
 
     @Override
     public void onLoad() {
@@ -85,6 +88,7 @@ public final class PermPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(listener, this);
         getCommand("perm").setExecutor(permCommand);
         tierCommand.enable();
+        toggleRankCommand.enable();
         localPermissionsFile = new File(getDataFolder(), "local.yml");
         refreshPermissionsSync();
         tryToLoadVault();
@@ -114,20 +118,25 @@ public final class PermPlugin extends JavaPlugin {
      * will trigger other servers to refresh permissions as soon as
      * possible. Writing to the database is done asynchronously.
      */
-    protected void updateVersion() {
-        SQLVersion version;
-        if (cache != null) {
-            version = cache.version;
-        } else {
-            version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
-            if (version == null) version = new SQLVersion("Perm");
-        }
-        version.setNow();
-        db.saveAsync(version, r -> broadcastRefresh());
+    protected void updateVersionLater() {
+        if (updatingVersion) return;
+        updatingVersion = true;
+        Bukkit.getScheduler().runTask(this, () -> {
+                updatingVersion = false;
+                SQLVersion version;
+                if (cache != null) {
+                    version = cache.version;
+                } else {
+                    version = db.find(SQLVersion.class).eq("name", "Perm").findUnique();
+                    if (version == null) version = new SQLVersion("Perm");
+                }
+                version.setNow();
+                db.saveAsync(version, r -> broadcastRefresh());
+            });
     }
 
     protected void updateVersionAndRefresh() {
-        updateVersion();
+        updateVersionLater();
         refreshPermissionsAsync();
     }
 
@@ -167,10 +176,13 @@ public final class PermPlugin extends JavaPlugin {
     }
 
     protected void refreshPermissionsAsync() {
+        if (refreshingPermissions) return;
+        refreshingPermissions = true;
         db.scheduleAsyncTask(() -> {
                 Cache newCache = new Cache();
                 newCache.load(this.db, loadLocalPermissions());
                 Bukkit.getScheduler().runTask(this, () -> {
+                        refreshingPermissions = false;
                         loadNewCache(newCache);
                     });
             });
@@ -395,7 +407,7 @@ public final class PermPlugin extends JavaPlugin {
                         cache.playerLevels.put(uuid, newRow);
                         cache.flushPlayer(uuid);
                         setupPlayerPerms(uuid);
-                        updateVersion();
+                        updateVersionLater();
                     }
                     if (callback != null) callback.run();
                 });
@@ -418,7 +430,7 @@ public final class PermPlugin extends JavaPlugin {
                         } else {
                             cache.flushPlayer(uuid);
                             setupPlayerPerms(uuid);
-                            updateVersion();
+                            updateVersionLater();
                         }
                         if (callback != null) callback.run();
                     });

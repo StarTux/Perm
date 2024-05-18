@@ -40,6 +40,11 @@ public final class CorePerm implements Perm {
     }
 
     @Override
+    public boolean isInAssignedGroup(UUID uuid, String groupName) {
+        return plugin.findPlayerGroups(uuid).contains(groupName);
+    }
+
+    @Override
     public Collection<String> getGroups(UUID uuid) {
         return plugin.cache.findAssignedGroups(uuid);
     }
@@ -61,7 +66,7 @@ public final class CorePerm implements Perm {
             .eq("group", group)
             .delete();
         if (count == 0) return false;
-        plugin.updateVersion();
+        plugin.updateVersionLater();
         plugin.refreshPermissionsAsync();
         return true;
     }
@@ -70,7 +75,7 @@ public final class CorePerm implements Perm {
     public boolean addGroup(UUID uuid, String group) {
         int count = plugin.db.insert(new SQLMember(uuid, group));
         if (count == 0) return false;
-        plugin.updateVersion();
+        plugin.updateVersionLater();
         plugin.refreshPermissionsAsync();
         return true;
     }
@@ -84,7 +89,7 @@ public final class CorePerm implements Perm {
         if (count == 0) return false;
         count = plugin.db.insert(new SQLMember(uuid, newGroup));
         if (count == 0) return false;
-        plugin.updateVersion();
+        plugin.updateVersionLater();
         plugin.refreshPermissionsAsync();
         return true;
     }
