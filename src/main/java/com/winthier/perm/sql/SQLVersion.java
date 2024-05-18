@@ -1,8 +1,8 @@
 package com.winthier.perm.sql;
 
+import com.winthier.sql.SQLRow;
 import com.winthier.sql.SQLRow.Name;
 import com.winthier.sql.SQLRow.NotNull;
-import com.winthier.sql.SQLRow;
 import java.util.Date;
 import lombok.Data;
 
