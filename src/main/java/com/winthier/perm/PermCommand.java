@@ -6,12 +6,13 @@ import com.cavetale.core.command.CommandNode;
 import com.cavetale.core.command.CommandWarn;
 import com.cavetale.core.perm.ExtraRank;
 import com.cavetale.core.perm.StaffRank;
+import com.cavetale.core.playercache.PlayerCache;
 import com.cavetale.mytems.item.font.Glyph;
 import com.winthier.perm.sql.SQLGroup;
 import com.winthier.perm.sql.SQLLevel;
 import com.winthier.perm.sql.SQLMember;
 import com.winthier.perm.sql.SQLPermission;
-import com.winthier.playercache.PlayerCache;
+import com.winthier.perm.sql.SQLPlayerLevel;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,7 +21,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,6 +55,7 @@ public final class PermCommand implements TabExecutor {
     private final PermPlugin plugin;
     private CommandNode rootNode;
     private CommandNode tierNode;
+    private CommandNode transferNode;
     private static final CommandArgCompleter COMPLETE_PERMS = CommandArgCompleter
         .supplyStream(() -> Bukkit.getPluginManager().getPermissions().stream().map(Permission::getName));
 
@@ -89,6 +92,9 @@ public final class PermCommand implements TabExecutor {
         tierNode.addChild("fromfile").denyTabCompletion()
             .description("Load tiers from file")
             .senderCaller(this::tierFromFile);
+        transferNode = rootNode.addChild("transfer").arguments("<from> <to>")
+            .description("Transfer tiers")
+            .senderCaller(this::transfer);
     }
 
     @Override
@@ -110,6 +116,7 @@ public final class PermCommand implements TabExecutor {
             case "list": return listCommand(sender, argl(args));
             case "local": return localCommand(sender, argl(args));
             case "tier": return tierNode.call(new CommandContext(sender, command, label, args), argl(args));
+            case "transfer": return transferNode.call(new CommandContext(sender, command, label, args), argl(args));
             default:
                 return false;
             }
@@ -575,7 +582,7 @@ public final class PermCommand implements TabExecutor {
         if ("groups".equals(subcmd)) {
             sender.sendMessage(text("Total " + plugin.cache.groups.size() + " groups:", YELLOW));
             List<SQLGroup> groups = new ArrayList<>(plugin.cache.groups);
-            Collections.sort(groups, (a, b) -> Integer.compare(a.getPriority(), b.getPriority()));
+            groups.sort(Comparator.comparing(SQLGroup::getPriority));
             for (SQLGroup group : groups) {
                 sender.sendMessage(join(noSeparators(), new Component[] {
                             text("\u2022", GRAY),
@@ -625,7 +632,7 @@ public final class PermCommand implements TabExecutor {
         String cmd = args[0];
         String arg = args[args.length - 1];
         if (args.length == 1) {
-            return contains(arg, Stream.of("player", "group", "list", "refresh", "tier"));
+            return contains(arg, Stream.of("player", "group", "list", "refresh", "tier", "transfer"));
         }
         switch (cmd) {
         case "list":
@@ -633,12 +640,12 @@ public final class PermCommand implements TabExecutor {
                 return contains(arg,
                                 Stream.of("groups", "playerperms"));
             }
-            return Collections.emptyList();
+            return List.of();
         case "player": {
             // /perm 0player 1NAME 2sub ...
-            if (args.length <= 2) return null;
-            UUID uuid = PlayerCache.uuidForName(args[1]);
-            if (uuid == null) return Collections.emptyList();
+            if (args.length == 2) return PlayerCache.completeNames(arg);
+            final UUID uuid = PlayerCache.uuidForName(args[1]);
+            if (uuid == null) return List.of();
             if (args.length == 3) {
                 return contains(arg,
                                 Stream.of("get", "show", "dump", "has",
@@ -653,13 +660,13 @@ public final class PermCommand implements TabExecutor {
                 if (args.length == 4) {
                     return contains(arg, plugin.getGroups().stream());
                 }
-                return Collections.emptyList();
+                return List.of();
             }
             if (in(sub, "removegroup")) {
                 if (args.length == 4) {
                     return contains(arg, plugin.findPlayerGroups(uuid).stream());
                 }
-                return Collections.emptyList();
+                return List.of();
             }
             if (in(sub, "replacegroup")) {
                 if (args.length == 4) {
@@ -668,14 +675,14 @@ public final class PermCommand implements TabExecutor {
                 if (args.length == 5) {
                     return contains(arg, plugin.getGroups().stream());
                 }
-                return Collections.emptyList();
+                return List.of();
             }
             if (in(sub, "set", "unset", "show", "dump")) {
                 if (args.length == 4) {
                     return completePermissions(arg);
                 }
             }
-            return Collections.emptyList();
+            return List.of();
         }
         case "group": {
             // /perm 0group 1GROUP 2sub
@@ -692,13 +699,13 @@ public final class PermCommand implements TabExecutor {
             }
             String sub = args[2];
             if (in(sub, "info", "remove", "resetparent")) {
-                return Collections.emptyList();
+                return List.of();
             }
             if (in(sub, "setparent")) {
                 if (args.length == 4) {
                     return contains(arg, plugin.getGroups().stream());
                 }
-                return Collections.emptyList();
+                return List.of();
             }
             if (in(sub, "setpriority")) {
                 if (args.length == 4) {
@@ -707,16 +714,23 @@ public final class PermCommand implements TabExecutor {
                         return Arrays.asList("" + i, "" + (i * 10));
                     } catch (NumberFormatException nfe) { }
                 }
-                return Collections.emptyList();
+                return List.of();
             }
             if (in(sub, "set", "unset", "show", "dump")) {
                 if (args.length == 4) {
                     return completePermissions(arg);
                 }
             }
-            return Collections.emptyList();
+            return List.of();
         }
         case "tier": return tierNode.complete(new CommandContext(sender, command, alias, args), argl(args));
+        case "transfer": {
+            if (args.length == 2 || args.length == 3) {
+                return PlayerCache.completeNames(arg);
+            } else {
+                return List.of();
+            }
+        }
         default:
             return null;
         }
@@ -894,6 +908,29 @@ public final class PermCommand implements TabExecutor {
         plugin.db.insert(rows);
         plugin.updateVersionAndRefresh();
         sender.sendMessage(text(rows.size() + " tier lines parsed", YELLOW));
+    }
+
+    private boolean transfer(CommandSender sender, String[] args) {
+        if (args.length != 2) return false;
+        final PlayerCache from = PlayerCache.require(args[0]);
+        final PlayerCache to = PlayerCache.require(args[1]);
+        sender.sendMessage(text("Transferring tier from " + from.name + " => " + to.name + "...", YELLOW));
+        final SQLPlayerLevel rowFrom = plugin.cache.playerLevels.get(from.uuid);
+        if (rowFrom == null) throw new CommandWarn("No tier row: " + from.name);
+        final SQLPlayerLevel rowTo = plugin.cache.playerLevels.get(to.uuid);
+        if (rowTo == null) throw new CommandWarn("No tier row: " + to.name);
+        final int oldLevel = rowTo.getLevel();
+        rowTo.addProgress(rowFrom.getTotalProgress());
+        rowTo.setUpdated(new Date());
+        rowFrom.setLevel(0);
+        rowFrom.setProgress(0);
+        rowFrom.setUpdated(new Date());
+        final int resultA = plugin.db.update(rowFrom);
+        final int resultB = plugin.db.update(rowTo);
+        plugin.updateVersionAndRefresh();
+        sender.sendMessage(text(to.name + " went from level " + oldLevel + " to " + rowTo.getLevel(), YELLOW));
+        sender.sendMessage(text("Database results from:" + resultA + " to:" + resultB, YELLOW));
+        return true;
     }
 
     private static String[] argl(String[] args) {

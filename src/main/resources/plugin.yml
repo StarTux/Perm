@@ -8,7 +8,10 @@ author: StarTux
 description: Permission plugin
 website: https://cavetale.com
 
-depend: [Core, SQL, PlayerCache, Mytems]
+depend:
+- Core
+- SQL
+- Mytems
 softdepend: [Vault]
 
 commands:
@@ -22,6 +25,7 @@ commands:
       /perm refresh - Refresh permission cache
       /perm list <what> ... - List things
       /perm tier ... - Tier commands
+      /perm transfer <from> <to>
 
   tier:
     description: View tier list

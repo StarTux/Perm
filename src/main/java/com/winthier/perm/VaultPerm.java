@@ -1,7 +1,7 @@
 package com.winthier.perm;
 
+import com.cavetale.core.playercache.PlayerCache;
 import com.winthier.perm.sql.SQLGroup;
-import com.winthier.playercache.PlayerCache;
 import java.util.List;
 import java.util.UUID;
 import net.milkbowl.vault.permission.Permission;
