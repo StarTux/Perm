@@ -412,20 +412,17 @@ public final class PermPlugin extends JavaPlugin {
                     if (callback != null) callback.run();
                 });
         } else {
-            int level = row.getLevel();
-            int progress = row.getProgress() + 1;
-            if (progress >= level) {
-                level += 1;
-                progress = 0;
-            }
+            final SQLPlayerLevel newRow = row.clone();
+            newRow.addProgress();
+            newRow.setUpdated(new Date());
             db.update(SQLPlayerLevel.class)
                 .row(row)
-                .atomic("level", level)
-                .atomic("progress", progress)
-                .set("updated", new Date())
+                .atomic("level", newRow.getLevel())
+                .atomic("progress", newRow.getProgress())
+                .set("updated", newRow.getUpdated())
                 .async(r -> {
                         if (r == 0) {
-                            getLogger().warning("Progress update failed: " + row);
+                            getLogger().warning("Progress update failed: " + row + " => " + newRow);
                             refreshPermissionsAsync();
                         } else {
                             cache.flushPlayer(uuid);
